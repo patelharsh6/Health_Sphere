@@ -1,0 +1,266 @@
+/* =========================================
+   1. VARIABLES & RESET
+   ========================================= */
+:root {
+  --footer-bg: #f8fafc;        /* Very light grey */
+  --footer-text: #64748b;      /* Muted text */
+  --footer-heading: #0f172a;   /* Dark heading */
+  --primary: #0d9488;          /* Teal */
+  --border-light: #e2e8f0;
+}
+
+.footer {
+  background-color: var(--footer-bg);
+  border-top: 1px solid var(--border-light);
+  padding: 60px 0 20px;
+  margin-top: auto; /* Pushes footer to bottom */
+  font-family: 'Inter', sans-serif;
+}
+
+.footer-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* =========================================
+   2. TOP SECTION (Brand + Links Grid)
+   ========================================= */
+.footer-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+  margin-bottom: 50px;
+}
+
+/* Brand Column */
+.footer-brand {
+  flex: 1;
+  min-width: 280px;
+  max-width: 350px;
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--primary);
+  font-weight: 800;
+  font-size: 20px;
+  margin-bottom: 15px;
+}
+
+.mission-text {
+  color: var(--footer-text);
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #f0fdf4;
+  color: #15803d;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 25px;
+  border: 1px solid #bbf7d0;
+}
+
+.social-links {
+  display: flex;
+  gap: 15px;
+}
+
+.social-links a {
+  color: var(--footer-text);
+  transition: color 0.2s;
+}
+
+.social-links a:hover {
+  color: var(--primary);
+}
+
+/* Links Wrapper (Grid) */
+.footer-links-wrapper {
+  flex: 3;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 4 Columns on Desktop */
+  gap: 20px;
+}
+
+.footer-column h3 {
+  color: var(--footer-heading);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  letter-spacing: 0.5px;
+}
+
+.link-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.link-list li {
+  margin-bottom: 12px;
+}
+
+.link-list a {
+  text-decoration: none;
+  color: var(--footer-text);
+  font-size: 14px;
+  transition: color 0.2s;
+}
+
+.link-list a:hover {
+  color: var(--primary);
+  padding-left: 3px; /* Subtle movement */
+}
+
+/* Accordion Icon (Mobile Only) */
+.accordion-icon {
+  display: none;
+}
+
+/* =========================================
+   3. MIDDLE SECTION (Contact)
+   ========================================= */
+.footer-middle {
+  padding: 20px 0;
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 30px;
+}
+
+.contact-row {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--footer-text);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* =========================================
+   4. BOTTOM SECTION (Disclaimer + Copyright)
+   ========================================= */
+.disclaimer-box {
+  background-color: #fff1f2;
+  color: #be123c;
+  padding: 15px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  margin-bottom: 30px;
+  border: 1px solid #fecdd3;
+  text-align: center;
+}
+
+.copyright-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.bottom-links {
+  display: flex;
+  gap: 15px;
+}
+
+/* =========================================
+   5. RESPONSIVE (Mobile Accordion Logic)
+   ========================================= */
+
+/* Tablet (2 Columns) */
+@media (max-width: 1024px) {
+  .footer-links-wrapper {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile (Accordion Style) */
+@media (max-width: 768px) {
+  .footer-top {
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  .footer-links-wrapper {
+    display: block; /* Stack vertically */
+  }
+
+  .footer-column {
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .footer-column:last-child {
+    border-bottom: none;
+  }
+
+  .column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    cursor: pointer;
+  }
+
+  .column-header h3 {
+    margin: 0;
+    font-size: 15px;
+  }
+
+  .accordion-icon {
+    display: block; /* Show chevron on mobile */
+    color: var(--footer-text);
+  }
+
+  /* Hide list by default on mobile */
+  .link-list {
+    display: none; 
+    padding-bottom: 20px;
+  }
+
+  /* Show list when 'open' class is added */
+  .footer-column.open .link-list {
+    display: block;
+    animation: slideDown 0.3s ease-out;
+  }
+
+  .footer-column.open h3 {
+    color: var(--primary);
+  }
+
+  .contact-row {
+    flex-direction: column;
+    gap: 15px;
+    align-items: center; /* Center align contacts */
+  }
+
+  .copyright-row {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

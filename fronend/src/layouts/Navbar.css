@@ -1,0 +1,378 @@
+/* =========================================
+   1. VARIABLES & RESET
+   ========================================= */
+:root {
+  --primary: #0d9488;       /* Teal 600 */
+  --primary-dark: #0f766e;  /* Teal 700 */
+  --bg-white: #ffffff;
+  --text-main: #1f2937;
+  --text-light: #6b7280;
+  --border: #e5e7eb;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* =========================================
+   2. NAVBAR CONTAINER
+   ========================================= */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: var(--bg-white);
+  height: 70px;
+  z-index: 1000;
+  transition: all 0.3s ease;
+  border-bottom: 1px solid transparent;
+}
+
+.navbar.scrolled {
+  box-shadow: var(--shadow);
+  border-bottom: 1px solid var(--border);
+}
+
+.navbar-container {
+  max-width: 1400px; /* Supports wider screens */
+  margin: 0 auto;
+  padding: 0 20px;
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--text-main);
+  z-index: 1001; /* Above toggle */
+}
+
+.logo-icon {
+  background-color: var(--primary);
+  background-image: url("../accets/logo.png");
+  color: white;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+}
+
+.brand-text h1 {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0;
+  line-height: 1;
+}
+
+.brand-text span {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--primary);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* Search Bar */
+.search-wrapper {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+  margin: 0 20px;
+  display: none; /* Hidden by default on mobile */
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 15px 10px 40px;
+  border-radius: 50px;
+  border: 1px solid var(--border);
+  background: #f9fafb;
+  outline: none;
+  font-size: 14px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light);
+}
+
+/* Desktop Nav Links */
+.desktop-nav {
+  display: none; /* Hidden by default on mobile */
+  align-items: center;
+  gap: 30px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  position: relative; /* For dropdown positioning */
+  height: 70px; /* Full height for better hover area */
+}
+
+/* Dropdown Logic */
+.dropdown-menu {
+  position: absolute;
+  top: 65px; /* Just below navbar */
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  width: 220px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+}
+
+.dropdown-trigger:hover .dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.dropdown-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  text-decoration: none;
+  color: var(--text-main);
+  font-size: 14px;
+  border-radius: 6px;
+}
+
+.dropdown-link:hover {
+  background-color: #f0fdf4;
+  color: var(--primary);
+}
+
+/* AI Badge */
+.ai-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #ccfbf1 0%, #e0f2fe 100%);
+  color: var(--primary-dark);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Profile Actions */
+.profile-actions {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.icon-btn, .avatar-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-light);
+  padding: 0;
+}
+
+.avatar-btn {
+  width: 36px;
+  height: 36px;
+  background: #ccfbf1;
+  color: var(--primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #99f6e4;
+}
+
+/* =========================================
+   5. MOBILE MENU (Fixed Overlay)
+   ========================================= */
+.mobile-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-main);
+  display: block; /* Visible on mobile */
+}
+
+.mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  right: -100%; /* Hidden off-screen */
+  width: 100%;
+  height: 100vh;
+  background-color: white;
+  z-index: 2000; /* Higher than navbar */
+  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-menu-overlay.open {
+  right: 0;
+}
+
+/* Mobile Header */
+.mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mobile-brand {
+  font-weight: 800;
+  font-size: 18px;
+  text-transform: uppercase;
+  color: var(--text-light);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-main);
+}
+
+/* Mobile Content */
+.mobile-content {
+  flex: 1;
+  overflow-y: auto; /* Scrollable */
+  padding: 20px;
+}
+
+/* Role Switcher */
+.role-switcher {
+  background: #f3f4f6;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 30px;
+}
+
+.role-switcher p {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-light);
+  margin-bottom: 10px;
+}
+
+.role-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.role-buttons button {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid var(--border);
+  background: white;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.role-buttons button.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* Mobile Links */
+.mobile-section {
+  margin-bottom: 30px;
+}
+
+.mobile-section h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #9ca3af;
+  margin-bottom: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.mobile-link {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12px 0;
+  text-decoration: none;
+  color: var(--text-main);
+  font-size: 17px;
+  font-weight: 500;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.icon-box {
+  background: #f0fdf4;
+  color: var(--primary);
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px;
+  background: #fee2e2;
+  color: #ef4444;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* =========================================
+   6. MEDIA QUERIES (Handling 4 Screens)
+   ========================================= */
+
+/* A. Small Mobile (Up to 480px) */
+@media (max-width: 480px) {
+  .brand-text h1 { font-size: 18px; }
+  .brand-text span { display: none; } /* Save space */
+}
+
+/* B. Tablet / Large Mobile (481px to 1024px) */
+@media (min-width: 481px) and (max-width: 1024px) {
+  .search-wrapper { 
+     display: block; /* Show search on tablet */
+     max-width: 250px;
+     margin-right: 10px;
+  }
+}
+
+/* C. Desktop / Laptop (Above 1024px) */
+@media (min-width: 1025px) {
+  /* Hide Mobile Elements */
+  .mobile-toggle { display: none; }
+  .mobile-menu-overlay { display: none; }
+
+  /* Show Desktop Elements */
+  .search-wrapper { display: block; }
+  .desktop-nav { display: flex; }
+}
