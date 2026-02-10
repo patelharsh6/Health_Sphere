@@ -3,12 +3,13 @@ import './App.css';
 import Navbar from './layouts/Navbar';
 import Footer from './layouts/Footer';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
 
 function App() {
   return (
     <div className="App">
       <Navbar />
-      <Login />
+      <Signup />
       <Footer />
     </div>
   );

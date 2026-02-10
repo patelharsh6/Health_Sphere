@@ -1,0 +1,290 @@
+/* =========================================
+   1. LAYOUT
+   ========================================= */
+.signup-container {
+  display: flex;
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  background-color: #f8fafc;
+}
+
+/* =========================================
+   2. LEFT SECTION (Trust)
+   ========================================= */
+.signup-left {
+  flex: 0.8;
+  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+  color: white;
+  padding: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.signup-brand h1 {
+  font-size: 36px;
+  font-weight: 800;
+  margin: 0 0 10px 0;
+}
+
+.brand-subtitle {
+  font-size: 18px;
+  opacity: 0.9;
+  margin-bottom: 50px;
+}
+
+.benefit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.benefit-item {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+}
+
+.benefit-icon {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px;
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+}
+
+.benefit-item h4 {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.benefit-item p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.8;
+  line-height: 1.4;
+}
+
+/* =========================================
+   3. RIGHT SECTION (Form)
+   ========================================= */
+.signup-right {
+  flex: 1.2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+.form-box {
+  width: 100%;
+  max-width: 500px;
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.form-box h2 {
+  color: #1e293b;
+  margin: 0 0 5px 0;
+}
+
+.form-subtitle {
+  color: #64748b;
+  font-size: 14px;
+  margin-bottom: 25px;
+}
+
+/* Role Tabs */
+.role-tabs {
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+}
+
+.tab {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.tab.active {
+  background: white;
+  color: #0d9488;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Input Styles */
+.input-row {
+  display: flex;
+  gap: 15px;
+}
+
+.input-group {
+  margin-bottom: 15px;
+  flex: 1;
+}
+
+.input-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #fff;
+  transition: border-color 0.2s;
+}
+
+.input-wrapper:focus-within {
+  border-color: #0d9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+}
+
+.input-wrapper svg {
+  color: #94a3b8;
+  margin-right: 10px;
+}
+
+.input-wrapper input {
+  width: 100%;
+  padding: 10px 0;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: #334155;
+}
+
+.custom-select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  background: white;
+  color: #334155;
+}
+
+.error-text {
+  color: #ef4444;
+  font-size: 11px;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Checkboxes */
+.checkbox-group {
+  margin: 20px 0;
+  padding: 15px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.checkbox-label {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 12px;
+  color: #475569;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.checkbox-label a {
+  color: #0d9488;
+  text-decoration: underline;
+}
+
+/* Button */
+.signup-btn {
+  width: 100%;
+  background-color: #0d9488;
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.signup-btn:hover {
+  background-color: #0f766e;
+}
+
+.signup-btn:disabled {
+  background-color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.login-link {
+  text-align: center;
+  font-size: 13px;
+  margin-top: 20px;
+  color: #64748b;
+}
+
+.login-link a {
+  color: #0d9488;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* =========================================
+   4. MOBILE RESPONSIVE
+   ========================================= */
+@media (max-width: 900px) {
+  .signup-container {
+    flex-direction: column;
+  }
+
+  .signup-left {
+    padding: 30px;
+    flex: none;
+  }
+  
+  .benefit-list {
+    display: none; /* Hide benefits on mobile to save space */
+  }
+
+  .signup-right {
+    padding: 20px;
+  }
+  
+  .form-box {
+    padding: 20px;
+    box-shadow: none;
+    border: none;
+  }
+
+  .input-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}
