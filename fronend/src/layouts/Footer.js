@@ -20,8 +20,8 @@ const Footer = () => {
       title: "Health Knowledge",
       links: [
         { name: "Disease Encyclopedia", href: "/diseases" },
-        { name: "Medicine Store", href: "/medicines" },
         { name: "Symptom Checker", href: "/symptoms" },
+        { name: "Medicine Store", href: "/medicines" },
         { name: "Health Blog", href: "/blog" }
       ]
     },
