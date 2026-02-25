@@ -443,7 +443,7 @@
 .trust-item p { font-size: 14px; color: var(--text-muted); }
 .trust-item svg { color: var(--primary); }
 
-/* =========================================
+/* ==================================
    RESPONSIVE DESIGN
    ========================================= */
 @media (max-width: 900px) {
