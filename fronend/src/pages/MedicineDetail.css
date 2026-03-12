@@ -1,0 +1,345 @@
+/* =========================================
+   1. GLOBAL & LAYOUT
+   ========================================= */
+.medicine-page {
+  font-family: 'Inter', sans-serif;
+  background-color: #f8fafc;
+  min-height: 100vh;
+  padding-bottom: 60px;
+}
+
+.medicine-layout {
+  max-width: 1200px;
+  margin: -40px auto 0;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+  align-items: start;
+}
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  z-index: 10;
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: sticky;
+  top: 90px;
+  z-index: 10;
+}
+
+/* =========================================
+   2. HERO HEADER
+   ========================================= */
+.medicine-hero {
+  background: linear-gradient(135deg, #0f766e 0%, #064e3b 100%);
+  color: white;
+  padding: 120px 20px 80px;
+}
+
+.hero-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.breadcrumbs {
+  font-size: 13px;
+  color: #a7f3d0;
+  margin-bottom: 20px;
+}
+
+.breadcrumbs a {
+  color: white;
+  text-decoration: none;
+}
+
+.breadcrumbs a:hover { text-decoration: underline; }
+
+.medicine-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.type-badge { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); }
+.category-badge { background: rgba(56, 189, 248, 0.2); color: #bae6fd; border: 1px solid rgba(56, 189, 248, 0.4); }
+.otc-badge { background: rgba(34, 197, 94, 0.2); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.4); }
+
+.medicine-hero h1 {
+  font-size: 42px;
+  font-weight: 800;
+  margin: 0 0 5px 0;
+}
+
+.generic-name {
+  font-size: 16px;
+  color: #a7f3d0;
+  margin-bottom: 15px;
+}
+
+.medicine-summary {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #ecfdf5;
+  max-width: 700px;
+  margin: 0;
+}
+
+/* =========================================
+   3. COLLAPSIBLE SECTIONS & SEMANTIC COLORS
+   ========================================= */
+.medicine-section {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+/* Blue -> Information */
+.card-info .section-title svg { color: #0ea5e9; }
+.card-info .section-header { border-bottom: 2px solid #e0f2fe; }
+
+/* Yellow -> Caution */
+.card-caution .section-title svg { color: #d97706; }
+.card-caution .section-header { border-bottom: 2px solid #fef3c7; }
+
+/* Red -> Warning */
+.card-warning .section-title svg { color: #dc2626; }
+.card-warning .section-header { border-bottom: 2px solid #fee2e2; }
+
+/* Default */
+.card-default .section-title svg { color: #64748b; }
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  cursor: pointer;
+  background: white;
+}
+
+.section-header:hover { background: #f8fafc; }
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.section-title h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.section-content {
+  padding: 25px;
+  font-size: 15px;
+  color: #475569;
+  line-height: 1.6;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   4. SECTION SPECIFIC STYLES
+   ========================================= */
+
+/* Uses Tags */
+.uses-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.use-tag {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #bae6fd;
+}
+
+/* Dosage Box */
+.dosage-box {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.dose-group {
+  background: #f8fafc;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid #0ea5e9;
+}
+
+.dose-group h4 { margin: 0 0 5px 0; color: #0f172a; font-size: 15px; }
+.dose-group p { margin: 0 0 5px 0; color: #334155; }
+.dose-limit { font-size: 13px; font-weight: 600; color: #dc2626; }
+
+.medical-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #0369a1;
+  background: #e0f2fe;
+  padding: 10px 15px;
+  border-radius: 8px;
+}
+
+/* Lists */
+.content-list { padding-left: 20px; margin-top: 15px; }
+.content-list li { margin-bottom: 10px; }
+
+.caution-list li::marker { color: #d97706; }
+.interaction-list li::marker { color: #ea580c; }
+
+/* Side Effects Grid */
+.side-effects-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.effect-column {
+  background: #f8fafc;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.effect-column.danger {
+  background: #fef2f2;
+  border-color: #fecdd3;
+}
+
+.effect-column h4 { margin: 0 0 10px 0; font-size: 14px; color: #334155; }
+.effect-column.danger h4 { color: #b91c1c; }
+
+.effect-column ul { padding-left: 20px; margin: 0; font-size: 14px; }
+.effect-column.danger ul { color: #991b1b; }
+
+/* =========================================
+   5. SIDEBAR PANELS
+   ========================================= */
+.side-panel {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+}
+
+.side-panel h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 15px 0;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 10px;
+}
+
+/* Info List */
+.info-list { list-style: none; padding: 0; margin: 0; }
+.info-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px dashed #e2e8f0;
+  font-size: 13px;
+}
+.info-list li:last-child { border-bottom: none; }
+
+.info-label { color: #64748b; font-weight: 600; }
+.info-value { color: #1e293b; font-weight: 600; text-align: right; }
+.info-value.yes { color: #16a34a; }
+.info-value.no { color: #d97706; }
+
+/* Disclaimer Panel (CRITICAL) */
+.disclaimer-panel {
+  background: #1e293b;
+  color: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #334155;
+  text-align: center;
+}
+
+.disclaimer-icon { color: #facc15; margin-bottom: 15px; }
+.disclaimer-panel h3 { font-size: 18px; margin: 0 0 10px 0; color: #f8fafc; }
+.disclaimer-panel p { font-size: 13px; color: #cbd5e1; line-height: 1.6; margin: 0; }
+
+/* Related Links */
+.related-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  text-decoration: none;
+  color: #334155;
+  font-size: 14px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.related-link:hover { background: #f0fdfa; color: #0d9488; }
+.related-link svg { color: #94a3b8; }
+
+/* =========================================
+   6. RESPONSIVE DESIGN
+   ========================================= */
+@media (max-width: 900px) {
+  .medicine-layout { grid-template-columns: 1fr; }
+  
+  .sidebar-content {
+    position: static;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .medicine-hero h1 { font-size: 32px; }
+  .sidebar-content { grid-template-columns: 1fr; }
+  .side-effects-grid { grid-template-columns: 1fr; }
+  .section-header { padding: 15px; }
+  .section-title h2 { font-size: 16px; }
+}
