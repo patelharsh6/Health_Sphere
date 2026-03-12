@@ -19,8 +19,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/symptoms" element={<SymptomChecker />} />
-        <Route path="/diseases/influenza" element={<DiseaseDetail />} />
-        <Route path="/medicines/paracetamol" element={<MedicineDetail />} />
+        <Route path="/diseases/influenza" element={<DiseaseDetail />} /> {/* Example disease route */}
+        <Route path="/medicines/paracetamol" element={<MedicineDetail />} /> {/* Example medicine route */}
 
         <Route path="*" element={<div style={{textAlign:'center', padding:'50px'}}>404 - Page Not Found</div>} />
       </Routes>
