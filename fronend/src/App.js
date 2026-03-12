@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import SymptomChecker from './pages/SymptomChecker';
 import DiseaseDetail from './pages/DiseaseDetail';
+import MedicineDetail from './pages/MedicineDetail';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/symptoms" element={<SymptomChecker />} />
         <Route path="/diseases/influenza" element={<DiseaseDetail />} />
+        <Route path="/medicines/paracetamol" element={<MedicineDetail />} />
 
         <Route path="*" element={<div style={{textAlign:'center', padding:'50px'}}>404 - Page Not Found</div>} />
       </Routes>
