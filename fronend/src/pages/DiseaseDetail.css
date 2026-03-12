@@ -1,0 +1,336 @@
+/* =========================================
+   1. GLOBAL & LAYOUT
+   ========================================= */
+.disease-page {
+  font-family: 'Inter', sans-serif;
+  background-color: #f8fafc;
+  min-height: 100vh;
+  padding-bottom: 60px;
+}
+
+.disease-layout {
+  max-width: 1200px;
+  margin: -40px auto 0;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+  align-items: start; /* Prevents sidebar stretching */
+}
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  z-index: 10;
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: sticky;
+  top: 90px; /* Stays fixed below navbar on scroll */
+  z-index: 10;
+}
+
+/* =========================================
+   2. HERO HEADER
+   ========================================= */
+.disease-hero {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: white;
+  padding: 120px 20px 80px; /* Accounts for Navbar */
+}
+
+.hero-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.breadcrumbs {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 20px;
+}
+
+.breadcrumbs a {
+  color: #cbd5e1;
+  text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+  text-decoration: underline;
+}
+
+.disease-badges {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.category { background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4); }
+.severity { background: rgba(34, 197, 94, 0.2); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.4); }
+.commonness { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4); }
+
+.disease-hero h1 {
+  font-size: 42px;
+  font-weight: 800;
+  margin: 0 0 15px 0;
+  line-height: 1.1;
+}
+
+.disease-summary {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #cbd5e1;
+  max-width: 700px;
+  margin: 0;
+}
+
+/* =========================================
+   3. COLLAPSIBLE SECTIONS (MAIN CONTENT)
+   ========================================= */
+.disease-section {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+/* Semantic Section Colors */
+.card-default .section-title svg { color: #64748b; }
+.card-info .section-title svg { color: #0284c7; }
+.card-success .section-title svg { color: #16a34a; }
+
+.card-info .section-header { border-bottom: 2px solid #e0f2fe; }
+.card-success .section-header { border-bottom: 2px solid #dcfce7; }
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  cursor: pointer;
+  background: white;
+}
+
+.section-header:hover { background: #f8fafc; }
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.section-title h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.section-content {
+  padding: 25px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 15px;
+  color: #475569;
+  line-height: 1.6;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.content-list {
+  padding-left: 20px;
+  margin-top: 15px;
+}
+
+.content-list li { margin-bottom: 10px; }
+.content-list li:last-child { margin-bottom: 0; }
+
+/* Symptoms Tags */
+.symptom-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.symptom-tag {
+  background: #f1f5f9;
+  color: #334155;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+}
+
+/* Medical Disclaimer Box */
+.medical-disclaimer-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #fffbeb;
+  color: #b45309;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid #f59e0b;
+  margin-top: 20px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.medical-disclaimer-box svg { flex-shrink: 0; margin-top: 2px; }
+
+/* =========================================
+   4. SIDEBAR PANELS
+   ========================================= */
+.quick-info-panel, .related-panel, .edu-panel {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+}
+
+.quick-info-panel h3, .related-panel h3, .edu-panel h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 15px 0;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 10px;
+}
+
+/* Info List */
+.info-list { list-style: none; padding: 0; margin: 0; }
+.info-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px dashed #e2e8f0;
+  font-size: 13px;
+}
+.info-list li:last-child { border-bottom: none; }
+
+.info-label { color: #64748b; font-weight: 600; }
+.info-value { color: #1e293b; font-weight: 600; text-align: right; }
+.info-value.yes { color: #dc2626; }
+
+/* Related Links */
+.related-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  text-decoration: none;
+  color: #334155;
+  font-size: 14px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.related-link:hover { background: #f8fafc; color: #0284c7; }
+.related-link svg { color: #94a3b8; }
+
+.edu-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  text-decoration: none;
+  color: #0d9488;
+  font-size: 14px;
+  font-weight: 600;
+  background: #f0fdfa;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ccfbf1;
+}
+
+.edu-link:hover { background: #e0f2fe; border-color: #bae6fd; color: #0284c7; }
+
+/* =========================================
+   5. DOCTOR ALERT PANEL (CRITICAL)
+   ========================================= */
+.alert-panel {
+  background: #fef2f2;
+  padding: 25px;
+  border-radius: 12px;
+  border: 1px solid #fecdd3;
+  box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.1);
+}
+
+.alert-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #b91c1c;
+  margin-bottom: 15px;
+}
+
+.alert-header h3 { font-size: 18px; margin: 0; font-weight: 800; }
+
+.alert-panel p { color: #991b1b; font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+.alert-list { color: #991b1b; font-size: 14px; padding-left: 20px; margin-bottom: 20px; }
+.alert-list li { margin-bottom: 5px; }
+
+.book-btn-sidebar {
+  width: 100%;
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.book-btn-sidebar:hover { background: #b91c1c; }
+
+/* =========================================
+   6. RESPONSIVE DESIGN
+   ========================================= */
+@media (max-width: 900px) {
+  .disease-layout { grid-template-columns: 1fr; }
+  
+  .sidebar-content {
+    position: static;
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Two columns for sidebar items on tablet */
+  }
+
+  .disease-badges { flex-wrap: wrap; }
+}
+
+@media (max-width: 600px) {
+  .disease-hero h1 { font-size: 32px; }
+  .sidebar-content { grid-template-columns: 1fr; /* Stack on mobile */ }
+  .section-header { padding: 15px; }
+  .section-title h2 { font-size: 16px; }
+}
