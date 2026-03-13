@@ -169,10 +169,16 @@
   gap: 6px;
   background: linear-gradient(135deg, #ccfbf1 0%, #e0f2fe 100%);
   color: var(--primary-dark);
-  padding: 6px 14px;
+  padding: 10px 14px;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 700;
+  margin-top: auto;
+}
+
+.ai-link{
+  text-decoration: none;
+  color: var(--primary-dark);
 }
 
 /* Profile Actions */
