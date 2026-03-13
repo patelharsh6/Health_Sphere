@@ -5,6 +5,7 @@ import {
   Bot, Bell, LayoutDashboard, ShieldCheck, LogOut 
 } from 'lucide-react';
 import './Navbar.css';
+import { Link } from 'react-router-dom';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -97,8 +98,10 @@ const Navbar = () => {
               </div>
             </div>
             
-            <div className="ai-badge">
-              <Bot size={16} /> AI Assistant
+            <div className="ai-badge" >
+              <Link to="/symptoms" className="ai-link">
+                <Bot size={16} /> AI Assistant
+              </Link>
             </div>
 
             <div className="profile-actions">
