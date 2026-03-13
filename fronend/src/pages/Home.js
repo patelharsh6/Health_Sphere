@@ -6,8 +6,10 @@ import {
   Search, Pill 
 } from 'lucide-react';
 import './Home.css';
+import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
+  const navigate = useNavigate();
   return (
     <div className="home-container">
       
@@ -28,7 +30,7 @@ const Home = () => {
               <button className="btn-primary">
                 <Activity size={20} /> Check Symptoms
               </button>
-              <button className="btn-secondary">
+              <button className="btn-secondary" onClick={ () => navigate('/appointments') }>
                 <Calendar size={20} /> Book Appointment
               </button>
             </div>
