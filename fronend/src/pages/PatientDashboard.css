@@ -281,7 +281,7 @@
 .report-item:last-child { border-bottom: none; }
 
 .report-icon { background: #f3e8ff; color: #7e22ce; padding: 10px; border-radius: 8px; }
-.report-info flex: 1;
+.report-info {flex: 1;}
 .report-info h4 { margin: 0 0 4px 0; font-size: 14px; color: #1e293b; }
 .report-info p { margin: 0; font-size: 12px; color: #94a3b8; }
 
