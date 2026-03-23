@@ -15,6 +15,7 @@ import ReportUpload from './pages/ReportUpload';
 import ReportAnalysis from './pages/ReportAnalysis';
 import DoctorListing from './pages/DoctorListing';
 import AppointmentHistory from './pages/AppointmentHistory';
+import UserProfile from './pages/UserProfile';
 
 function App() {
   return (
