@@ -14,6 +14,7 @@ import PatientDashboard from './pages/PatientDashboard';
 import ReportUpload from './pages/ReportUpload';
 import ReportAnalysis from './pages/ReportAnalysis';
 import DoctorListing from './pages/DoctorListing';
+import AppointmentHistory from './pages/AppointmentHistory';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
         <Route path="/upload" element={<ReportUpload />} />
         <Route path="/analysis" element={<ReportAnalysis />} />
         <Route path="/doctors" element={<DoctorListing />} />
+        <Route path="/my-appointments" element={<AppointmentHistory />} />
 
         <Route path="*" element={<div style={{textAlign:'center', padding:'50px'}}>404 - Page Not Found</div>} />
       </Routes>
