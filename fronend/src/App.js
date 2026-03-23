@@ -11,6 +11,7 @@ import DiseaseDetail from './pages/DiseaseDetail';
 import MedicineDetail from './pages/MedicineDetail';
 import BookAppointment from './pages/BookAppointment';
 import PatientDashboard from './pages/PatientDashboard';
+import ReportUpload from './pages/ReportUpload';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
         <Route path="/medicines/paracetamol" element={<MedicineDetail />} /> {/* Example medicine route */}
         <Route path="/appointments" element={<BookAppointment />} />
         <Route path="/dashboard" element={<PatientDashboard />} />
+        <Route path="/upload" element={<ReportUpload />} />
 
         <Route path="*" element={<div style={{textAlign:'center', padding:'50px'}}>404 - Page Not Found</div>} />
       </Routes>

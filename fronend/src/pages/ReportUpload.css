@@ -1,0 +1,252 @@
+/* =========================================
+   1. GLOBAL & LAYOUT
+   ========================================= */
+.upload-page {
+  font-family: 'Inter', sans-serif;
+  background-color: #f8fafc;
+  min-height: 100vh;
+  padding-bottom: 60px;
+}
+
+.upload-header {
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 100px 20px 30px; /* Accounts for global navbar */
+  margin-bottom: 30px;
+}
+
+.header-container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #64748b;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  transition: color 0.2s;
+}
+
+.back-link:hover { color: #0d9488; }
+
+.header-titles h1 {
+  font-size: 28px;
+  color: #0f172a;
+  margin: 0 0 5px 0;
+}
+
+.header-titles p {
+  color: #64748b;
+  margin: 0;
+  font-size: 15px;
+}
+
+.upload-layout {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 30px;
+  align-items: start;
+}
+
+/* =========================================
+   2. DRAG & DROP ZONE
+   ========================================= */
+.drag-drop-zone {
+  background: white;
+  border: 2px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 60px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.drag-drop-zone:hover, .drag-drop-zone.dragging {
+  border-color: #0d9488;
+  background: #f0fdfa;
+}
+
+.upload-icon-circle {
+  width: 80px;
+  height: 80px;
+  background: #f1f5f9;
+  color: #64748b;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  transition: all 0.3s;
+}
+
+.drag-drop-zone:hover .upload-icon-circle, 
+.drag-drop-zone.dragging .upload-icon-circle {
+  background: #ccfbf1;
+  color: #0d9488;
+}
+
+.drag-drop-zone h3 { margin: 0 0 10px 0; color: #1e293b; font-size: 18px; }
+.drag-drop-zone p { color: #64748b; margin: 0 0 15px 0; font-size: 14px; }
+.browse-text { color: #0d9488; font-weight: 600; text-decoration: underline; }
+.supported-formats { font-size: 12px; color: #94a3b8; }
+
+/* =========================================
+   3. FILE PREVIEW & 4. DETAILS FORM
+   ========================================= */
+.file-prep-section {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  padding: 30px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.file-preview-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 15px 20px;
+  border-radius: 10px;
+  margin-bottom: 25px;
+}
+
+.file-info { display: flex; align-items: center; gap: 15px; }
+.file-type-icon { color: #ef4444; } /* Red for PDF/Files */
+.file-name { margin: 0 0 5px 0; font-weight: 600; color: #1e293b; font-size: 15px; word-break: break-all;}
+.file-size { margin: 0; font-size: 12px; color: #64748b; }
+
+.file-actions { display: flex; gap: 15px; }
+.icon-btn-text {
+  background: none; border: none; display: flex; align-items: center; gap: 5px;
+  font-size: 13px; font-weight: 600; color: #64748b; cursor: pointer; transition: color 0.2s;
+}
+.icon-btn-text:hover { color: #0d9488; }
+.icon-btn-text.danger:hover { color: #ef4444; }
+
+/* Form Elements */
+.report-details-form h3 { font-size: 16px; color: #1e293b; margin: 0 0 20px 0; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+
+.form-row { display: flex; gap: 20px; }
+.form-row .input-group { flex: 1; }
+
+.input-group { margin-bottom: 20px; }
+.input-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 8px; }
+
+.input-group input {
+  width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 8px;
+  font-size: 14px; outline: none; transition: border-color 0.2s; background: #fff;
+}
+.input-group input:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1); }
+
+.input-with-icon { position: relative; display: flex; align-items: center; }
+.input-with-icon svg { position: absolute; left: 12px; color: #94a3b8; }
+.input-with-icon input { padding-left: 35px; }
+
+/* =========================================
+   5. ACTION BUTTONS & PROGRESS
+   ========================================= */
+.upload-actions { display: flex; gap: 15px; margin-top: 10px; }
+
+.btn-secondary, .btn-primary-ai {
+  flex: 1; padding: 14px; border-radius: 8px; font-size: 14px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.2s;
+}
+
+.btn-secondary { background: white; border: 1px solid #cbd5e1; color: #475569; }
+.btn-secondary:hover { background: #f8fafc; border-color: #94a3b8; }
+
+.btn-primary-ai { background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%); color: white; border: none; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2); }
+.btn-primary-ai:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(13, 148, 136, 0.3); }
+
+/* Progress Bar */
+.upload-progress-container { margin: 30px 0; }
+.progress-header { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; color: #0d9488; margin-bottom: 8px; }
+.progress-bar-bg { width: 100%; height: 8px; background: #ccfbf1; border-radius: 4px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: #0d9488; border-radius: 4px; transition: width 0.2s ease; }
+
+/* Success State */
+.success-state {
+  background: white; border-radius: 16px; border: 1px solid #bbf7d0; padding: 50px 20px;
+  text-align: center; animation: scaleIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+
+.success-icon { color: #10b981; margin-bottom: 20px; }
+.success-state h2 { color: #064e3b; margin: 0 0 10px 0; font-size: 24px; }
+.success-state p { color: #475569; margin-bottom: 25px; }
+
+.btn-outline { background: transparent; border: 2px solid #0d9488; color: #0d9488; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+.btn-outline:hover { background: #f0fdfa; }
+
+/* 8. Security Note */
+.security-note { display: flex; align-items: flex-start; gap: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 8px; margin-top: 20px; }
+.shield-icon { color: #16a34a; flex-shrink: 0; margin-top: 2px; }
+.security-note p { margin: 0; font-size: 13px; color: #15803d; line-height: 1.5; }
+
+/* =========================================
+   7. RECENT UPLOADS SIDEBAR
+   ========================================= */
+.recent-uploads-sidebar {
+  background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 25px;
+}
+
+.sidebar-header h3 { font-size: 16px; color: #1e293b; margin: 0 0 20px 0; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
+
+.recent-list { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
+
+.recent-report-card { display: flex; align-items: center; gap: 15px; padding: 12px; border: 1px solid #f1f5f9; border-radius: 10px; background: #f8fafc; transition: border-color 0.2s; }
+.recent-report-card:hover { border-color: #cbd5e1; }
+
+.recent-icon { background: #e0f2fe; color: #0284c7; padding: 10px; border-radius: 8px; display: flex; }
+.recent-details { flex: 1; overflow: hidden; }
+.recent-details h4 { margin: 0 0 5px 0; font-size: 14px; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.recent-meta { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #64748b; }
+.status-dot { display: flex; align-items: center; gap: 5px; font-weight: 600; }
+.status-dot::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+.status-dot.analyzed { color: #16a34a; }
+.status-dot.analyzed::before { background: #16a34a; }
+.status-dot.pending { color: #d97706; }
+.status-dot.pending::before { background: #d97706; }
+
+.recent-actions { display: flex; gap: 5px; }
+.action-btn { background: white; border: 1px solid #e2e8f0; padding: 6px; border-radius: 6px; cursor: pointer; color: #64748b; transition: all 0.2s; }
+.action-btn:hover { background: #f1f5f9; }
+.ai-btn:hover { color: #0d9488; border-color: #0d9488; }
+.delete-btn:hover { color: #ef4444; border-color: #ef4444; }
+
+.view-all-link { display: block; text-align: center; color: #0d9488; font-size: 13px; font-weight: 600; text-decoration: none; padding: 10px; background: #f0fdfa; border-radius: 8px; }
+.view-all-link:hover { background: #ccfbf1; }
+
+/* =========================================
+   RESPONSIVE DESIGN
+   ========================================= */
+@media (max-width: 900px) {
+  .upload-layout { grid-template-columns: 1fr; }
+  .form-row { flex-direction: column; gap: 0; }
+}
+
+@media (max-width: 600px) {
+  .upload-header { padding-top: 80px; }
+  .header-titles h1 { font-size: 24px; }
+  .upload-actions { flex-direction: column; }
+  .file-preview-card { flex-direction: column; align-items: flex-start; gap: 15px; }
+}
