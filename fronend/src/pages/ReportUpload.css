@@ -238,7 +238,7 @@
 
 /* =========================================
    RESPONSIVE DESIGN
-   ========================================= */
+   ======================================= */
 @media (max-width: 900px) {
   .upload-layout { grid-template-columns: 1fr; }
   .form-row { flex-direction: column; gap: 0; }
