@@ -6,10 +6,14 @@ import {
   Search, Pill 
 } from 'lucide-react';
 import './Home.css';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate ,Link} from 'react-router-dom';
 
 const Home = () => {
   const navigate = useNavigate();
+
+  const symptomsClick = () => {
+    navigate("/symptoms");
+  };
   return (
     <div className="home-container">
       
@@ -27,7 +31,7 @@ const Home = () => {
               Experience the future of healthcare today.
             </p>
             <div className="hero-buttons">
-              <button className="btn-primary" onClick={navigate("/symptoms")}>
+              <button className="btn-primary" onClick={symptomsClick}>
                 <Activity size={20}/> Check Symptoms
               </button>
               <button className="btn-secondary" onClick={ () => navigate('/appointments') }>
@@ -81,36 +85,48 @@ const Home = () => {
         </div>
         
         <div className="cards-grid">
-          <div className="feature-card">
-            <div className="icon-box teal"><Stethoscope size={24} /></div>
-            <h3>Symptom Checker</h3>
-            <p>Analyze symptoms with AI precision.</p>
-          </div>
-          <div className="feature-card">
-            <div className="icon-box blue"><Calendar size={24} /></div>
-            <h3>Book Appointment</h3>
-            <p>Find doctors near you instantly.</p>
-          </div>
-          <div className="feature-card">
-            <div className="icon-box purple"><FileText size={24} /></div>
-            <h3>Lab Reports</h3>
-            <p>Upload & analyze medical records.</p>
-          </div>
-          <div className="feature-card">
-            <div className="icon-box green"><Bot size={24} /></div>
-            <h3>AI Assistant</h3>
-            <p>24/7 health guidance & tips.</p>
-          </div>
-          <div className="feature-card">
-            <div className="icon-box orange"><Search size={24} /></div>
-            <h3>Explore Diseases</h3>
-            <p>Comprehensive medical encyclopedia.</p>
-          </div>
-          <div className="feature-card">
-            <div className="icon-box red"><Pill size={24} /></div>
-            <h3>Medicine Info</h3>
-            <p>Dosage, side effects & uses.</p>
-          </div>
+          <Link to="/symptoms">
+            <div className="feature-card">
+              <div className="icon-box teal"><Stethoscope size={24} /></div>
+              <h3>Symptom Checker</h3>
+              <p>Analyze symptoms with AI precision.</p>
+            </div>
+          </Link>
+          <Link to="/appointments">
+            <div className="feature-card">
+              <div className="icon-box blue"><Calendar size={24} /></div>
+              <h3>Book Appointment</h3>
+              <p>Find doctors near you instantly.</p>
+            </div>
+          </Link>
+          <Link to="/reports">
+            <div className="feature-card">
+              <div className="icon-box purple"><FileText size={24} /></div>
+              <h3>Lab Reports</h3>
+              <p>Upload & analyze medical records.</p>
+            </div>
+          </Link>
+          <Link to="/ai-assistant">
+            <div className="feature-card">
+              <div className="icon-box green"><Bot size={24} /></div>
+              <h3>AI Assistant</h3>
+              <p>24/7 health guidance & tips.</p>
+            </div>
+          </Link>
+          <Link to="/diseases">
+            <div className="feature-card">
+              <div className="icon-box orange"><Search size={24} /></div>
+              <h3>Explore Diseases</h3>
+              <p>Comprehensive medical encyclopedia.</p>
+            </div>
+          </Link>
+          <Link to="/medicines">
+            <div className="feature-card">
+              <div className="icon-box red"><Pill size={24} /></div>
+              <h3>Medicine Info</h3>
+              <p>Dosage, side effects & uses.</p>
+            </div>
+          </Link>
         </div>
       </section>
 
