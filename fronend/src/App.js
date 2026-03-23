@@ -12,6 +12,7 @@ import MedicineDetail from './pages/MedicineDetail';
 import BookAppointment from './pages/BookAppointment';
 import PatientDashboard from './pages/PatientDashboard';
 import ReportUpload from './pages/ReportUpload';
+import ReportAnalysis from './pages/ReportAnalysis';
 
 function App() {
   return (
