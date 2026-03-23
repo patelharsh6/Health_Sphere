@@ -29,7 +29,7 @@ function App() {
         <Route path="/diseases/influenza" element={<DiseaseDetail />} /> {/* Example disease route */}
         <Route path="/medicines/paracetamol" element={<MedicineDetail />} /> {/* Example medicine route */}
         <Route path="/appointments" element={<BookAppointment />} />
-        <Route path="/dashboard" element={<PatientDashboard />} />
+        <Route path="/dashboard" element={<PatientDashboard   />} />
         <Route path="/upload" element={<ReportUpload />} />
         <Route path="/analysis" element={<ReportAnalysis />} />
         <Route path="/doctors" element={<DoctorListing />} />

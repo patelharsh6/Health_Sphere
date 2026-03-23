@@ -27,8 +27,8 @@ const Home = () => {
               Experience the future of healthcare today.
             </p>
             <div className="hero-buttons">
-              <button className="btn-primary">
-                <Activity size={20} /> Check Symptoms
+              <button className="btn-primary" onClick={navigate("/symptoms")}>
+                <Activity size={20}/> Check Symptoms
               </button>
               <button className="btn-secondary" onClick={ () => navigate('/appointments') }>
                 <Calendar size={20} /> Book Appointment
