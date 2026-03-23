@@ -33,6 +33,7 @@ function App() {
         <Route path="/analysis" element={<ReportAnalysis />} />
         <Route path="/doctors" element={<DoctorListing />} />
         <Route path="/my-appointments" element={<AppointmentHistory />} />
+        <Route path="/profile" element={<UserProfile />} />
 
         <Route path="*" element={<div style={{textAlign:'center', padding:'50px'}}>404 - Page Not Found</div>} />
       </Routes>
