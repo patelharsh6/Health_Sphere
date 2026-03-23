@@ -1,0 +1,251 @@
+/* =========================================
+   1. GLOBAL & LAYOUT
+   ========================================= */
+.apt-history-page {
+  font-family: 'Inter', sans-serif;
+  background-color: #f8fafc;
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+
+.apt-header {
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 100px 20px 30px; /* Accounts for global navbar */
+  margin-bottom: 30px;
+}
+
+.header-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #64748b;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  transition: color 0.2s;
+}
+.back-link:hover { color: #0d9488; }
+
+.header-titles h1 { font-size: 28px; color: #0f172a; margin: 0 0 5px 0; }
+.header-titles p { color: #64748b; margin: 0; font-size: 15px; }
+
+.apt-layout {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* =========================================
+   2. FILTER TABS
+   ========================================= */
+.apt-tabs {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid #e2e8f0;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding-bottom: 2px;
+}
+
+/* Hide scrollbar for tabs */
+.apt-tabs::-webkit-scrollbar { display: none; }
+.apt-tabs { -ms-overflow-style: none; scrollbar-width: none; }
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.tab-btn:hover { color: #0f172a; }
+
+.tab-btn.active { color: #0d9488; }
+.tab-btn.active::after {
+  content: ''; position: absolute; bottom: -3px; left: 0;
+  width: 100%; height: 3px; background: #0d9488;
+  border-radius: 3px 3px 0 0;
+}
+
+/* =========================================
+   3. APPOINTMENT CARDS
+   ========================================= */
+.apt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.apt-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+  transition: box-shadow 0.2s;
+}
+.apt-card:hover { box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); border-color: #cbd5e1; }
+
+.apt-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.doc-profile-small { display: flex; align-items: center; gap: 15px; }
+.doc-avatar-text { width: 45px; height: 45px; background: #e0f2fe; color: #0284c7; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; border: 1px solid #bae6fd; }
+
+.doc-profile-small h3 { margin: 0 0 2px 0; font-size: 16px; color: #1e293b; }
+.doc-spec { font-size: 13px; color: #64748b; }
+
+/* Status Badges */
+.apt-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.bg-green { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
+.bg-yellow { background: #fef08a; color: #a16207; border: 1px solid #fde047; }
+.bg-blue { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }
+.bg-red { background: #fee2e2; color: #b91c1c; border: 1px solid #fecdd3; }
+
+/* Card Body */
+.apt-card-body {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  border: 1px solid #f1f5f9;
+}
+
+.apt-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+.info-item { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #334155; }
+.info-item svg { color: #94a3b8; }
+
+/* Card Footer */
+.apt-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 15px;
+}
+
+.apt-id { font-size: 12px; color: #94a3b8; font-family: monospace; }
+
+.action-buttons { display: flex; gap: 10px; align-items: center; }
+
+.btn-primary, .btn-outline, .btn-secondary {
+  padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; text-decoration: none;
+}
+.btn-primary { background: #0d9488; color: white; border: none; }
+.btn-primary:hover { background: #0f766e; }
+
+.btn-outline { background: white; color: #475569; border: 1px solid #cbd5e1; }
+.btn-outline:hover { background: #f8fafc; border-color: #94a3b8; color: #1e293b; }
+
+.btn-secondary { background: #f1f5f9; color: #475569; border: none; }
+.btn-secondary:hover { background: #e2e8f0; }
+
+.btn-text-danger { background: transparent; border: none; color: #ef4444; font-size: 13px; font-weight: 600; cursor: pointer; padding: 10px; }
+.btn-text-danger:hover { text-decoration: underline; }
+
+/* Empty State */
+.empty-state { text-align: center; padding: 80px 20px; background: white; border-radius: 12px; border: 1px dashed #cbd5e1; }
+.empty-icon { color: #cbd5e1; margin-bottom: 20px; }
+.empty-state h2 { color: #1e293b; margin: 0 0 10px 0; }
+.empty-state p { color: #64748b; margin: 0 0 20px 0; }
+.inline-flex { display: inline-flex; }
+.mt-4 { margin-top: 25px; }
+
+/* =========================================
+   4. MODAL DESIGN
+   ========================================= */
+.apt-modal-overlay {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+  z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+
+.apt-modal {
+  background: white; width: 100%; max-width: 550px; border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden;
+  display: flex; flex-direction: column; max-height: 90vh;
+  animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modalPop { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #e2e8f0; }
+.modal-header h2 { margin: 0; font-size: 20px; color: #0f172a; }
+.close-btn { background: none; border: none; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color 0.2s; }
+.close-btn:hover { color: #0f172a; }
+
+.modal-body { padding: 0; overflow-y: auto; }
+
+.modal-banner { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid #e2e8f0; }
+.banner-id { font-size: 13px; color: #64748b; font-family: monospace; }
+.banner-confirmed { background: #f0fdf4; border-bottom-color: #bbf7d0; }
+.banner-pending { background: #fefce8; border-bottom-color: #fef08a; }
+.banner-completed { background: #f0f9ff; border-bottom-color: #bae6fd; }
+.banner-cancelled { background: #fef2f2; border-bottom-color: #fecdd3; }
+
+.modal-section { padding: 20px; }
+.border-top { border-top: 1px solid #e2e8f0; }
+.bg-light { background: #f8fafc; }
+.bg-red-light { background: #fef2f2; }
+
+.doc-summary { display: flex; align-items: center; gap: 15px; }
+.doc-avatar-large { width: 60px; height: 60px; background: #e0f2fe; color: #0284c7; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; border: 2px solid #bae6fd; }
+.doc-summary h3 { margin: 0 0 5px 0; font-size: 18px; color: #1e293b; }
+.doc-summary p { margin: 0; font-size: 14px; color: #64748b; }
+
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #e2e8f0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;}
+.grid-box { background: white; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+.box-label { font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+.box-value { font-size: 15px; color: #0f172a; display: flex; align-items: center; gap: 6px; }
+
+.section-title { margin: 0 0 15px 0; font-size: 15px; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+.text-red { color: #dc2626 !important; }
+
+.flex-between { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #475569; }
+.mt-2 { margin-top: 10px; }
+.text-green { color: #16a34a; }
+.text-yellow { color: #d97706; }
+
+.notes-text { margin: 0; font-size: 14px; line-height: 1.6; color: #334155; }
+
+.modal-footer { padding: 20px; border-top: 1px solid #e2e8f0; background: white; }
+.full-width { width: 100%; }
+.flex-1 { flex: 1; }
+
+/* =========================================
+   5. RESPONSIVE DESIGN
+   ========================================= */
+@media (max-width: 768px) {
+  .apt-info-grid { grid-template-columns: 1fr; gap: 10px; }
+  .apt-card-header { flex-direction: column; gap: 15px; }
+  .apt-card-footer { flex-direction: column; align-items: flex-start; gap: 15px; }
+  .action-buttons { width: 100%; display: flex; }
+  .action-buttons button { flex: 1; }
+  .btn-text-danger { padding-left: 0; }
+}
+
+@media (max-width: 600px) {
+  .apt-modal-overlay { padding: 0; }
+  .apt-modal { height: 100vh; max-height: 100vh; border-radius: 0; }
+  .modal-grid { grid-template-columns: 1fr; }
+  .action-buttons.full-width { flex-direction: column; }
+}
