@@ -27,6 +27,7 @@ function App() {
         <Route path="/appointments" element={<BookAppointment />} />
         <Route path="/dashboard" element={<PatientDashboard />} />
         <Route path="/upload" element={<ReportUpload />} />
+        <Route path="/analysis" element={<ReportAnalysis />} />
 
         <Route path="*" element={<div style={{textAlign:'center', padding:'50px'}}>404 - Page Not Found</div>} />
       </Routes>
