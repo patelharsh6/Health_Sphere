@@ -283,7 +283,7 @@
 .btn-text { background: transparent; color: #64748b; border: none; text-decoration: none; }
 .btn-text:hover { color: #0f172a; }
 
-/* =========================================
+/* ========================================
    4. RESPONSIVE DESIGN
    ========================================= */
 @media (max-width: 900px) {
