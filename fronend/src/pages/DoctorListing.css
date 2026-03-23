@@ -1,0 +1,289 @@
+/* =========================================
+   1. GLOBAL & LAYOUT
+   ========================================= */
+.doctor-listing-page {
+  font-family: 'Inter', sans-serif;
+  background-color: #f8fafc;
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+
+.listing-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: white;
+  padding: 120px 20px 60px; /* Accounts for navbar */
+  text-align: center;
+}
+
+.header-content h1 { font-size: 36px; margin: 0 0 10px 0; font-weight: 800; }
+.header-content p { font-size: 16px; color: #cbd5e1; margin: 0; }
+
+.listing-layout {
+  max-width: 1200px;
+  margin: -30px auto 0;
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+/* =========================================
+   2. SEARCH & FILTER BAR
+   ========================================= */
+.filter-bar {
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+}
+
+.search-input-box {
+  flex: 2;
+  display: flex;
+  align-items: center;
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 0 15px;
+  border: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.search-input-box:focus-within { border-color: #0d9488; background: white; }
+.search-icon { color: #64748b; margin-right: 10px; }
+.search-input-box input {
+  width: 100%;
+  padding: 14px 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 15px;
+}
+
+.filter-dropdowns {
+  flex: 1.5;
+  display: flex;
+  gap: 15px;
+}
+
+.filter-select {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 15px;
+}
+
+.filter-icon { color: #0d9488; margin-right: 8px; }
+.filter-select select {
+  width: 100%;
+  padding: 14px 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: #334155;
+  cursor: pointer;
+}
+
+/* =========================================
+   3. DOCTOR CARDS GRID
+   ========================================= */
+.doctor-results { margin-top: 10px; }
+.results-count { font-size: 14px; color: #64748b; margin-bottom: 20px; font-weight: 600; }
+
+.doctor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 25px;
+}
+
+.doctor-card {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  padding: 25px;
+  position: relative;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.doctor-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
+  border-color: #cbd5e1;
+}
+
+/* Availability Badge */
+.avail-badge {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.avail-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+.status-green { background: #dcfce7; color: #16a34a; }
+.status-green .dot { background: #16a34a; }
+
+.status-yellow { background: #fef08a; color: #a16207; }
+.status-yellow .dot { background: #d97706; }
+
+.status-red { background: #fee2e2; color: #b91c1c; }
+.status-red .dot { background: #dc2626; }
+
+/* Card Top */
+.doc-card-top { display: flex; gap: 15px; margin-bottom: 20px; }
+
+.doc-avatar-large {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  color: #0369a1;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 800;
+  border: 1px solid #7dd3fc;
+}
+
+.doc-info-main h3 { font-size: 18px; margin: 0 0 5px 0; color: #0f172a; }
+
+.doc-spec-badge {
+  display: inline-block;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.doc-rating-reviews { display: flex; align-items: center; gap: 8px; }
+.rating-box { display: flex; align-items: center; gap: 4px; background: #fef08a; color: #854d0e; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: 700; }
+.star-fill { color: #d97706; fill: #d97706; }
+.reviews-text { font-size: 12px; color: #64748b; }
+
+/* Card Mid */
+.doc-card-mid { flex: 1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; border-top: 1px dashed #e2e8f0; padding-top: 15px; }
+
+.info-row { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: #475569; }
+.info-row svg { color: #94a3b8; flex-shrink: 0; margin-top: 2px; }
+
+.info-row.fee { margin-top: 5px; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #f1f5f9; }
+.info-row.fee strong { font-size: 15px; color: #0f172a; }
+
+/* Card Actions */
+.doc-card-actions { display: flex; gap: 10px; }
+
+.btn-secondary { flex: 1; background: white; border: 1px solid #cbd5e1; color: #475569; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.btn-secondary:hover { background: #f8fafc; border-color: #94a3b8; }
+
+.btn-primary-link { flex: 1; background: #0d9488; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 600; text-align: center; text-decoration: none; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+.btn-primary-link:hover { background: #0f766e; }
+.btn-primary-link.large { padding: 14px 20px; font-size: 15px; }
+
+/* Load More / Empty State */
+.load-more-container { text-align: center; margin-top: 40px; }
+.btn-outline { background: transparent; border: 2px solid #0d9488; color: #0d9488; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-outline:hover { background: #f0fdfa; }
+
+.no-results { text-align: center; padding: 60px 20px; background: white; border-radius: 12px; border: 1px dashed #cbd5e1; margin-top: 20px; }
+.text-muted { color: #94a3b8; }
+.no-results h3 { margin: 15px 0 5px; color: #1e293b; }
+.mt-3 { margin-top: 15px; }
+
+/* =========================================
+   4. DOCTOR MODAL (Expanded View)
+   ========================================= */
+.doctor-modal-overlay {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px);
+  z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+
+.doctor-modal {
+  background: white; width: 100%; max-width: 600px; border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden;
+  display: flex; flex-direction: column; max-height: 90vh; position: relative;
+  animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modalPop { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+.modal-close {
+  position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.8);
+  border: none; width: 32px; height: 32px; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center; color: #475569; cursor: pointer; z-index: 10;
+}
+.modal-close:hover { background: white; color: #0f172a; }
+
+.modal-header-profile { background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); padding: 30px; display: flex; gap: 20px; align-items: center; border-bottom: 1px solid #99f6e4; }
+
+.doc-avatar-huge { width: 80px; height: 80px; background: white; color: #0d9488; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; border: 2px solid #5eead4; flex-shrink: 0; box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.1); }
+
+.modal-header-info h2 { margin: 0 0 5px 0; font-size: 22px; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+.verified-icon { color: #0ea5e9; fill: #e0f2fe; }
+
+.modal-spec { font-weight: 600; color: #0d9488; margin: 0 0 5px 0; font-size: 15px; }
+.modal-edu { color: #475569; font-size: 13px; margin: 0 0 10px 0; }
+
+.modal-rating { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #334155; }
+.modal-rating span { color: #64748b; font-size: 13px; }
+
+.modal-body { padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 25px; }
+
+.modal-section h3 { font-size: 16px; color: #1e293b; margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px; }
+.modal-section h3 svg { color: #0d9488; }
+.modal-section p { font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 5px 0; }
+
+.modal-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; }
+
+.review-card { background: white; border: 1px solid #e2e8f0; padding: 15px; border-radius: 10px; }
+.review-stars { display: flex; gap: 2px; margin-bottom: 8px; }
+.review-text { font-size: 13px !important; font-style: italic; margin-bottom: 10px !important; }
+.review-author { font-size: 12px; font-weight: 600; color: #0ea5e9; }
+
+.modal-footer { padding: 20px 30px; border-top: 1px solid #e2e8f0; background: white; display: flex; justify-content: space-between; align-items: center; }
+
+.modal-fee span { display: block; font-size: 12px; color: #64748b; margin-bottom: 2px; }
+.modal-fee strong { font-size: 20px; color: #0f172a; }
+
+/* =========================================
+   5. RESPONSIVE DESIGN
+   ========================================= */
+@media (max-width: 900px) {
+  .filter-bar { flex-direction: column; }
+  .search-input-box { width: 100%; }
+  .filter-dropdowns { width: 100%; flex-direction: row; }
+}
+
+@media (max-width: 600px) {
+  .filter-dropdowns { flex-direction: column; }
+  .doctor-grid { grid-template-columns: 1fr; }
+  .doc-card-actions { flex-direction: column; }
+  
+  .doctor-modal-overlay { padding: 0; }
+  .doctor-modal { height: 100vh; max-height: 100vh; border-radius: 0; }
+  .modal-grid-2 { grid-template-columns: 1fr; }
+  .modal-header-profile { flex-direction: column; text-align: center; }
+  .modal-rating { justify-content: center; }
+  .modal-footer { flex-direction: column; gap: 15px; }
+  .modal-footer .btn-primary-link { width: 100%; }
+}
