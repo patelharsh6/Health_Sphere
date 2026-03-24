@@ -5,9 +5,12 @@ import {
   Bot, Bell, LayoutDashboard, ShieldCheck, LogOut 
 } from 'lucide-react';
 import './Navbar.css';
-import { Link } from 'react-router-dom';
+import { Link ,useNavigate} from 'react-router-dom';
+
+
 
 const Navbar = () => {
+  const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState('patient'); // Mock role
@@ -50,6 +53,10 @@ const Navbar = () => {
   };
 
   const currentLinks = getLinks(userRole);
+
+  const profileClick = () => {
+    navigate('/profile');
+  }
 
   return (
     <>
@@ -106,7 +113,7 @@ const Navbar = () => {
 
             <div className="profile-actions">
               <button className="icon-btn"><Bell size={20} /></button>
-              <button className="avatar-btn"><User size={20} /></button>
+              <button className="avatar-btn" onClick={profileClick}><User size={20} /></button>
             </div>
           </div>
 

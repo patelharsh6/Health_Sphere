@@ -14,6 +14,14 @@ const Home = () => {
   const symptomsClick = () => {
     navigate("/symptoms");
   };
+
+  const createClick = () => {
+    navigate("/signup");
+  }
+
+  const exploreClick = () => {
+    navigate("/symptoms");
+  }
   return (
     <div className="home-container">
       
@@ -85,42 +93,42 @@ const Home = () => {
         </div>
         
         <div className="cards-grid">
-          <Link to="/symptoms">
+          <Link to="/symptoms"  style={{ textDecoration: "none"  , color:'inherit' }}>
             <div className="feature-card">
               <div className="icon-box teal"><Stethoscope size={24} /></div>
               <h3>Symptom Checker</h3>
               <p>Analyze symptoms with AI precision.</p>
             </div>
           </Link>
-          <Link to="/appointments">
+          <Link to="/appointments"  style={{ textDecoration: "none"  , color:'inherit' }}>
             <div className="feature-card">
               <div className="icon-box blue"><Calendar size={24} /></div>
               <h3>Book Appointment</h3>
               <p>Find doctors near you instantly.</p>
             </div>
           </Link>
-          <Link to="/reports">
+          <Link to="/reports"  style={{ textDecoration: "none"  , color:'inherit' }}>
             <div className="feature-card">
               <div className="icon-box purple"><FileText size={24} /></div>
               <h3>Lab Reports</h3>
               <p>Upload & analyze medical records.</p>
             </div>
           </Link>
-          <Link to="/ai-assistant">
+          <Link to="/ai-assistant"  style={{ textDecoration: "none"  , color:'inherit' }}>
             <div className="feature-card">
               <div className="icon-box green"><Bot size={24} /></div>
               <h3>AI Assistant</h3>
               <p>24/7 health guidance & tips.</p>
             </div>
           </Link>
-          <Link to="/diseases">
-            <div className="feature-card">
+          <Link to="/diseases"  style={{ textDecoration: "none" , color:'inherit'  , color:'inherit' }}>
+            <div className="feature-card"  style={{ textDecoration: "none" }}>
               <div className="icon-box orange"><Search size={24} /></div>
               <h3>Explore Diseases</h3>
               <p>Comprehensive medical encyclopedia.</p>
             </div>
           </Link>
-          <Link to="/medicines">
+          <Link to="/medicines"  style={{ textDecoration: "none"  , color:'inherit' }}>
             <div className="feature-card">
               <div className="icon-box red"><Pill size={24} /></div>
               <h3>Medicine Info</h3>
@@ -214,8 +222,8 @@ const Home = () => {
           <h2>Take control of your health today.</h2>
           <p>Join thousands of users making smarter health decisions.</p>
           <div className="cta-buttons">
-            <button className="btn-white">Create Free Account</button>
-            <button className="btn-outline">Explore Features</button>
+            <button className="btn-white" onClick={createClick}>Create Free Account</button>
+            <button className="btn-outline" onClick={exploreClick}>Explore Features</button>
           </div>
         </div>
       </section>
