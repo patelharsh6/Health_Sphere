@@ -7,9 +7,11 @@ import {
 } from 'lucide-react';
 import './Home.css';
 import { useNavigate ,Link} from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Home = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
 
   const symptomsClick = () => {
     navigate("/symptoms");
@@ -42,9 +44,15 @@ const Home = () => {
               <button className="btn-primary" onClick={symptomsClick}>
                 <Activity size={20}/> Check Symptoms
               </button>
-              <button className="btn-secondary" onClick={ () => navigate('/appointments') }>
-                <Calendar size={20} /> Book Appointment
-              </button>
+              {user?.role === 'doctor' ? (
+                <button className="btn-secondary" onClick={ () => navigate('/doc-schedule') }>
+                  <Calendar size={20} /> Manage Schedule
+                </button>
+              ) : (
+                <button className="btn-secondary" onClick={ () => navigate('/appointments') }>
+                  <Calendar size={20} /> Book Appointment
+                </button>
+              )}
             </div>
           </div>
           
@@ -100,13 +108,23 @@ const Home = () => {
               <p>Analyze symptoms with AI precision.</p>
             </div>
           </Link>
-          <Link to="/appointments"  style={{ textDecoration: "none"  , color:'inherit' }}>
-            <div className="feature-card">
-              <div className="icon-box blue"><Calendar size={24} /></div>
-              <h3>Book Appointment</h3>
-              <p>Find doctors near you instantly.</p>
-            </div>
-          </Link>
+          {user?.role === 'doctor' ? (
+            <Link to="/doc-schedule"  style={{ textDecoration: "none"  , color:'inherit' }}>
+              <div className="feature-card">
+                <div className="icon-box blue"><Calendar size={24} /></div>
+                <h3>Manage Schedule</h3>
+                <p>View your upcoming appointments.</p>
+              </div>
+            </Link>
+          ) : (
+            <Link to="/appointments"  style={{ textDecoration: "none"  , color:'inherit' }}>
+              <div className="feature-card">
+                <div className="icon-box blue"><Calendar size={24} /></div>
+                <h3>Book Appointment</h3>
+                <p>Find doctors near you instantly.</p>
+              </div>
+            </Link>
+          )}
           <Link to="/reports"  style={{ textDecoration: "none"  , color:'inherit' }}>
             <div className="feature-card">
               <div className="icon-box purple"><FileText size={24} /></div>
@@ -222,7 +240,11 @@ const Home = () => {
           <h2>Take control of your health today.</h2>
           <p>Join thousands of users making smarter health decisions.</p>
           <div className="cta-buttons">
-            <button className="btn-white" onClick={createClick}>Create Free Account</button>
+            {isAuthenticated ? (
+              <button className="btn-white" onClick={() => navigate(user?.role === 'doctor' ? '/doc-dashboard' : '/dashboard')}>Go to Dashboard</button>
+            ) : (
+              <button className="btn-white" onClick={createClick}>Create Free Account</button>
+            )}
             <button className="btn-outline" onClick={exploreClick}>Explore Features</button>
           </div>
         </div>

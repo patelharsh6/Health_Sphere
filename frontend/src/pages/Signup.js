@@ -4,12 +4,17 @@ import {
   Stethoscope, Building, ShieldCheck, 
   AlertCircle, CheckCircle, ArrowRight 
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './Signup.css';
 
 const Signup = () => {
-  const [role, setRole] = useState('patient'); // 'patient', 'doctor', 'admin'
+  const navigate = useNavigate();
+  const { register } = useAuth();
+  const [role, setRole] = useState('patient');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState('');
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -17,19 +22,15 @@ const Signup = () => {
     phone: '',
     password: '',
     confirmPassword: '',
-    // Patient Specific
     dob: '',
     gender: '',
-    // Doctor Specific
     medicalLicense: '',
     specialization: '',
-    // Admin Specific
     hospitalId: '',
     termsAccepted: false,
     aiDisclaimerAccepted: false
   });
 
-  // Validation Logic
   const validateForm = () => {
     let newErrors = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -47,7 +48,6 @@ const Signup = () => {
       newErrors.confirmPassword = "Passwords do not match";
     }
 
-    // Role Specific Validation
     if (role === 'patient') {
       if (!formData.dob) newErrors.dob = "Date of Birth is required";
       if (!formData.gender) newErrors.gender = "Gender is required";
@@ -60,7 +60,6 @@ const Signup = () => {
       if (!formData.hospitalId) newErrors.hospitalId = "Hospital ID is required";
     }
 
-    // Checkboxes
     if (!formData.termsAccepted) newErrors.terms = "You must accept the Terms";
     if (!formData.aiDisclaimerAccepted) newErrors.ai = "You must acknowledge AI limitations";
 
@@ -68,15 +67,46 @@ const Signup = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setServerError('');
+    
     if (validateForm()) {
       setIsLoading(true);
-      // Simulate API Call
-      setTimeout(() => {
-        alert("Account Created Successfully! Redirecting to Dashboard...");
+      try {
+        const payload = {
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+          role,
+          termsAccepted: formData.termsAccepted,
+          aiDisclaimerAccepted: formData.aiDisclaimerAccepted,
+        };
+
+        // Add role-specific fields
+        if (role === 'patient') {
+          payload.dob = formData.dob;
+          payload.gender = formData.gender;
+        } else if (role === 'doctor') {
+          payload.medicalLicense = formData.medicalLicense;
+          payload.specialization = formData.specialization;
+        } else if (role === 'admin') {
+          payload.hospitalId = formData.hospitalId;
+        }
+
+        const result = await register(payload);
+        if (result.success) {
+          navigate('/dashboard');
+        } else {
+          setServerError(result.message || 'Registration failed.');
+        }
+      } catch (err) {
+        const msg = err.response?.data?.message || 'Registration failed. Please try again.';
+        setServerError(msg);
+      } finally {
         setIsLoading(false);
-      }, 1500);
+      }
     }
   };
 
@@ -86,7 +116,6 @@ const Signup = () => {
       ...formData,
       [name]: type === 'checkbox' ? checked : value
     });
-    // Clear error for this field when user types
     if (errors[name]) {
       setErrors({...errors, [name]: ''});
     }
@@ -155,6 +184,8 @@ const Signup = () => {
             </button>
           </div>
 
+          {serverError && <div className="error-text" style={{color: '#ef4444', marginBottom: '12px', textAlign: 'center'}}>{serverError}</div>}
+
           <form onSubmit={handleSubmit}>
             {/* Common Fields */}
             <div className="input-row">
@@ -162,7 +193,7 @@ const Signup = () => {
                 <label>Full Name</label>
                 <div className="input-wrapper">
                   <User size={18} />
-                  <input type="text" name="fullName" placeholder="John Doe" onChange={handleChange} />
+                  <input type="text" name="fullName" placeholder="John Doe" value={formData.fullName} onChange={handleChange} />
                 </div>
                 {errors.fullName && <span className="error-text">{errors.fullName}</span>}
               </div>
@@ -170,7 +201,7 @@ const Signup = () => {
                 <label>Mobile Number</label>
                 <div className="input-wrapper">
                   <Phone size={18} />
-                  <input type="text" name="phone" placeholder="9876543210" onChange={handleChange} />
+                  <input type="text" name="phone" placeholder="9876543210" value={formData.phone} onChange={handleChange} />
                 </div>
                 {errors.phone && <span className="error-text">{errors.phone}</span>}
               </div>
@@ -180,7 +211,7 @@ const Signup = () => {
               <label>Email Address</label>
               <div className="input-wrapper">
                 <Mail size={18} />
-                <input type="email" name="email" placeholder="john@example.com" onChange={handleChange} />
+                <input type="email" name="email" placeholder="john@example.com" value={formData.email} onChange={handleChange} />
               </div>
               {errors.email && <span className="error-text">{errors.email}</span>}
             </div>
@@ -192,13 +223,13 @@ const Signup = () => {
                   <label>Date of Birth</label>
                   <div className="input-wrapper">
                     <Calendar size={18} />
-                    <input type="date" name="dob" onChange={handleChange} />
+                    <input type="date" name="dob" value={formData.dob} onChange={handleChange} />
                   </div>
                   {errors.dob && <span className="error-text">{errors.dob}</span>}
                 </div>
                 <div className="input-group">
                   <label>Gender</label>
-                  <select name="gender" className="custom-select" onChange={handleChange}>
+                  <select name="gender" className="custom-select" value={formData.gender} onChange={handleChange}>
                     <option value="">Select</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
@@ -215,17 +246,19 @@ const Signup = () => {
                   <label>Medical License No.</label>
                   <div className="input-wrapper">
                     <Stethoscope size={18} />
-                    <input type="text" name="medicalLicense" placeholder="MD-12345" onChange={handleChange} />
+                    <input type="text" name="medicalLicense" placeholder="MD-12345" value={formData.medicalLicense} onChange={handleChange} />
                   </div>
                   {errors.medicalLicense && <span className="error-text">{errors.medicalLicense}</span>}
                 </div>
                 <div className="input-group">
                   <label>Specialization</label>
-                  <select name="specialization" className="custom-select" onChange={handleChange}>
+                  <select name="specialization" className="custom-select" value={formData.specialization} onChange={handleChange}>
                     <option value="">Select</option>
-                    <option value="cardio">Cardiologist</option>
-                    <option value="derma">Dermatologist</option>
-                    <option value="gp">General Physician</option>
+                    <option value="General Physician">General Physician</option>
+                    <option value="Cardiologist">Cardiologist</option>
+                    <option value="Dermatologist">Dermatologist</option>
+                    <option value="Neurologist">Neurologist</option>
+                    <option value="Pediatrician">Pediatrician</option>
                   </select>
                   {errors.specialization && <span className="error-text">{errors.specialization}</span>}
                 </div>
@@ -237,7 +270,7 @@ const Signup = () => {
                 <label>Hospital ID / Code</label>
                 <div className="input-wrapper">
                   <Building size={18} />
-                  <input type="text" name="hospitalId" placeholder="HOSP-001" onChange={handleChange} />
+                  <input type="text" name="hospitalId" placeholder="HOSP-001" value={formData.hospitalId} onChange={handleChange} />
                 </div>
                 {errors.hospitalId && <span className="error-text">{errors.hospitalId}</span>}
               </div>
@@ -249,7 +282,7 @@ const Signup = () => {
                 <label>Password</label>
                 <div className="input-wrapper">
                   <Lock size={18} />
-                  <input type="password" name="password" placeholder="********" onChange={handleChange} />
+                  <input type="password" name="password" placeholder="********" value={formData.password} onChange={handleChange} />
                 </div>
                 {errors.password && <span className="error-text">{errors.password}</span>}
               </div>
@@ -257,7 +290,7 @@ const Signup = () => {
                 <label>Confirm Password</label>
                 <div className="input-wrapper">
                   <Lock size={18} />
-                  <input type="password" name="confirmPassword" placeholder="********" onChange={handleChange} />
+                  <input type="password" name="confirmPassword" placeholder="********" value={formData.confirmPassword} onChange={handleChange} />
                 </div>
                 {errors.confirmPassword && <span className="error-text">{errors.confirmPassword}</span>}
               </div>
@@ -266,13 +299,13 @@ const Signup = () => {
             {/* Legal Checkboxes */}
             <div className="checkbox-group">
               <label className="checkbox-label">
-                <input type="checkbox" name="termsAccepted" onChange={handleChange} />
+                <input type="checkbox" name="termsAccepted" checked={formData.termsAccepted} onChange={handleChange} />
                 <span>I agree to the <a href="#">Terms & Conditions</a></span>
               </label>
               {errors.terms && <span className="error-text block">{errors.terms}</span>}
               
               <label className="checkbox-label">
-                <input type="checkbox" name="aiDisclaimerAccepted" onChange={handleChange} />
+                <input type="checkbox" name="aiDisclaimerAccepted" checked={formData.aiDisclaimerAccepted} onChange={handleChange} />
                 <span>I understand that AI suggestions are for assistance, not final diagnosis.</span>
               </label>
               {errors.ai && <span className="error-text block">{errors.ai}</span>}

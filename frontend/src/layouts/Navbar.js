@@ -5,24 +5,23 @@ import {
   Bot, Bell, LayoutDashboard, ShieldCheck, LogOut 
 } from 'lucide-react';
 import './Navbar.css';
-import { Link ,useNavigate} from 'react-router-dom';
-
-
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [userRole, setUserRole] = useState('patient'); // Mock role
 
-  // Handle Scroll Effect
+  const userRole = user?.role || 'patient';
+
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Prevent background scrolling when mobile menu is open
   useEffect(() => {
     if (isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -31,13 +30,12 @@ const Navbar = () => {
     }
   }, [isMobileMenuOpen]);
 
-  // Links Data
   const getLinks = (role) => {
     const links = {
       patient: [
         { name: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/dashboard' },
         { name: 'Appointments', icon: <Calendar size={20} />, href: '/appointments' },
-        { name: 'Reports', icon: <Upload size={20} />, href: '/reports' },
+        { name: 'Reports', icon: <Upload size={20} />, href: '/upload' },
       ],
       doctor: [
         { name: 'Doctor Panel', icon: <Activity size={20} />, href: '/doc-dashboard' },
@@ -54,9 +52,21 @@ const Navbar = () => {
 
   const currentLinks = getLinks(userRole);
 
+  const handleLogout = () => {
+    logout();
+    setIsMobileMenuOpen(false);
+    navigate('/login');
+  };
+
   const profileClick = () => {
     navigate('/profile');
-  }
+  };
+
+  // Get user initials for avatar
+  const getInitials = () => {
+    if (!user?.fullName) return 'U';
+    return user.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  };
 
   return (
     <>
@@ -74,7 +84,7 @@ const Navbar = () => {
             </div>
           </a>
 
-          {/* CENTER: SEARCH (Hidden on Mobile/Tablet) */}
+          {/* CENTER: SEARCH */}
           <div className="search-wrapper">
             <Search className="search-icon" size={18} />
             <input 
@@ -84,40 +94,60 @@ const Navbar = () => {
             />
           </div>
 
-          {/* RIGHT: DESKTOP NAV (Hidden on Mobile/Tablet) */}
+          {/* RIGHT: DESKTOP NAV */}
           <div className="desktop-nav">
             
-            {/* Explore Dropdown */}
             <div className="nav-item dropdown-trigger">
               <span>Explore</span> <ChevronDown size={14} />
-              
-              {/* Dropdown Menu Content */}
               <div className="dropdown-menu">
-                <a href="/diseases" className="dropdown-link">
-                  <Stethoscope size={16} /> Disease Encyclopedia
-                </a>
-                <a href="/medicines" className="dropdown-link">
-                  <Pill size={16} /> Medicine Store
-                </a>
                 <a href="/symptoms" className="dropdown-link">
-                  <Activity size={16} /> Symptom Checker
+                  <Stethoscope size={16} /> Symptom Checker
                 </a>
+                {userRole !== 'doctor' && (
+                  <a href="/doctors" className="dropdown-link">
+                    <Activity size={16} /> Find Doctors
+                  </a>
+                )}
               </div>
             </div>
             
-            <div className="ai-badge" >
-              <Link to="/symptoms" className="ai-link">
+            <div className="ai-badge">
+              <Link to="/ai-assistant" className="ai-link">
                 <Bot size={16} /> AI Assistant
               </Link>
             </div>
 
-            <div className="profile-actions">
-              <button className="icon-btn"><Bell size={20} /></button>
-              <button className="avatar-btn" onClick={profileClick}><User size={20} /></button>
-            </div>
+            {isAuthenticated ? (
+              <div className="profile-actions" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <button className="icon-btn"><Bell size={20} /></button>
+                
+                <div className="nav-item dropdown-trigger" style={{ padding: 0 }}>
+                  <button className="avatar-btn" title={user?.fullName} style={{ pointerEvents: 'none' }}>
+                    {getInitials()}
+                  </button>
+                  <div className="dropdown-menu profile-dropdown" style={{ minWidth: '180px' }}>
+                    <a href={userRole === 'doctor' ? "/doc-dashboard" : "/dashboard"} className="dropdown-link">
+                      <LayoutDashboard size={16} /> Dashboard
+                    </a>
+                    <a href="/profile" className="dropdown-link">
+                      <User size={16} /> My Profile
+                    </a>
+                    <button className="dropdown-link" onClick={handleLogout} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', color: 'inherit' }}>
+                      <LogOut size={16} /> Logout
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            ) : (
+              <div className="profile-actions">
+                <Link to="/login" className="nav-login-btn">Login</Link>
+                <Link to="/signup" className="nav-signup-btn">Sign Up</Link>
+              </div>
+            )}
           </div>
 
-          {/* RIGHT: MOBILE TOGGLE (Visible on Mobile/Tablet) */}
+          {/* RIGHT: MOBILE TOGGLE */}
           <button 
             className="mobile-toggle" 
             onClick={() => setIsMobileMenuOpen(true)}
@@ -137,26 +167,16 @@ const Navbar = () => {
         </div>
 
         <div className="mobile-content">
-          {/* Role Switcher Demo */}
-          <div className="role-switcher">
-            <p>DEMO ROLE:</p>
-            <div className="role-buttons">
-              {['patient', 'doctor', 'admin'].map(role => (
-                <button 
-                  key={role} 
-                  onClick={() => setUserRole(role)}
-                  className={userRole === role ? 'active' : ''}
-                >
-                  {role}
-                </button>
-              ))}
+          {isAuthenticated && (
+            <div className="role-switcher">
+              <p>Logged in as: <strong>{user?.fullName}</strong> ({userRole})</p>
             </div>
-          </div>
+          )}
 
           <div className="mobile-section">
             <h3>My Health ({userRole})</h3>
             {currentLinks.map((link, index) => (
-              <a key={index} href={link.href} className="mobile-link">
+              <a key={index} href={link.href} className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
                 <span className="icon-box">{link.icon}</span>
                 {link.name}
               </a>
@@ -165,24 +185,29 @@ const Navbar = () => {
 
           <div className="mobile-section">
             <h3>Explore Health</h3>
-            <a href="/diseases" className="mobile-link">
+            <a href="/symptoms" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
               <span className="icon-box"><Stethoscope size={20} /></span>
-              Diseases
+              Symptom Checker
             </a>
-            <a href="/medicines" className="mobile-link">
-               <span className="icon-box"><Pill size={20} /></span>
-               Medicines
-            </a>
-             <a href="/blog" className="mobile-link">
-               <span className="icon-box"><FileText size={20} /></span>
-               Blog
-            </a>
+            {userRole !== 'doctor' && (
+              <a href="/doctors" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
+                 <span className="icon-box"><Activity size={20} /></span>
+                 Find Doctors
+              </a>
+            )}
           </div>
 
           <div className="mobile-footer">
-            <button className="logout-btn">
-              <LogOut size={18} /> Logout
-            </button>
+            {isAuthenticated ? (
+              <button className="logout-btn" onClick={handleLogout}>
+                <LogOut size={18} /> Logout
+              </button>
+            ) : (
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <a href="/login" className="logout-btn" style={{ textDecoration: 'none', textAlign: 'center' }}>Login</a>
+                <a href="/signup" className="logout-btn" style={{ textDecoration: 'none', textAlign: 'center' }}>Sign Up</a>
+              </div>
+            )}
           </div>
         </div>
       </div>

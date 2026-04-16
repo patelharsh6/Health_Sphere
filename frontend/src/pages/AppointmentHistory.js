@@ -1,51 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Calendar, Clock, MapPin, User, ChevronLeft, 
   CheckCircle, XCircle, AlertCircle, FileText, 
-  Star, Video, CreditCard, X, Activity 
+  Star, Video, CreditCard, X, Activity, Loader
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { appointmentAPI } from '../services/api';
 import './AppointmentHistory.css';
 
-// Mock Data for Appointments
-const MOCK_APPOINTMENTS = [
-  { 
-    id: 'APT-101', doctor: 'Dr. Rahul Sharma', spec: 'Cardiologist', 
-    date: '2026-03-25', time: '10:30 AM', hospital: 'City Heart Center', 
-    status: 'confirmed', type: 'In-Person', fee: 800, payment: 'Paid Online',
-    notes: 'Please bring your previous ECG reports.'
-  },
-  { 
-    id: 'APT-102', doctor: 'Dr. Sneha Patel', spec: 'Dermatologist', 
-    date: '2026-03-28', time: '02:00 PM', hospital: 'SkinCare Clinic', 
-    status: 'pending', type: 'Video Consult', fee: 600, payment: 'Pending',
-    notes: 'A meeting link will be shared 15 minutes before the consultation.'
-  },
-  { 
-    id: 'APT-099', doctor: 'Dr. Amit Kumar', spec: 'General Physician', 
-    date: '2026-03-12', time: '11:00 AM', hospital: 'HealthSphere Main', 
-    status: 'completed', type: 'In-Person', fee: 500, payment: 'Paid at Clinic', 
-    notes: 'Patient advised to take complete rest for 3 days. Paracetamol prescribed for fever.' 
-  },
-  { 
-    id: 'APT-085', doctor: 'Dr. Vikram Joshi', spec: 'Neurologist', 
-    date: '2026-02-15', time: '04:30 PM', hospital: 'Neuro Spine Center', 
-    status: 'cancelled', type: 'In-Person', fee: 1000, payment: 'Refunded', 
-    cancelReason: 'Cancelled by patient due to scheduling conflict.' 
-  },
-];
-
 const AppointmentHistory = () => {
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('upcoming');
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(null);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    fetchAppointments();
+  }, [isAuthenticated, authLoading]);
+
+  const fetchAppointments = async () => {
+    try {
+      setLoading(true);
+      const res = await appointmentAPI.getMyAppointments({ limit: 50 });
+      if (res.data.success) {
+        setAppointments(res.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch appointments:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter Logic
-  const filteredAppointments = MOCK_APPOINTMENTS.filter(apt => {
+  const filteredAppointments = appointments.filter(apt => {
     if (activeTab === 'upcoming') return apt.status === 'confirmed' || apt.status === 'pending';
     if (activeTab === 'completed') return apt.status === 'completed';
     if (activeTab === 'cancelled') return apt.status === 'cancelled';
     return true;
   });
+
+  const handleCancel = async (id) => {
+    if (!window.confirm('Are you sure you want to cancel this appointment?')) return;
+    setCancelling(id);
+    try {
+      const res = await appointmentAPI.cancel(id);
+      if (res.data.success) {
+        // Refresh appointments
+        await fetchAppointments();
+      }
+    } catch (error) {
+      console.error('Failed to cancel:', error);
+      alert(error.response?.data?.message || 'Failed to cancel appointment.');
+    } finally {
+      setCancelling(null);
+    }
+  };
+
+  // Helper for date formatting
+  const formatDate = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
 
   // Helper function for status badges
   const getStatusBadge = (status) => {
@@ -101,69 +125,77 @@ const AppointmentHistory = () => {
         {/* 3. APPOINTMENT CARDS LIST */}
         <div className="apt-list">
           
-          {filteredAppointments.length > 0 ? (
-            filteredAppointments.map(apt => (
-              <div key={apt.id} className="apt-card">
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '60px' }}>
+              <Loader size={40} style={{ animation: 'spin 1s linear infinite' }} />
+              <p style={{ marginTop: '16px', color: '#94a3b8' }}>Loading appointments...</p>
+            </div>
+          ) : filteredAppointments.length > 0 ? (
+            filteredAppointments.map(apt => {
+              const doctorName = apt.doctor?.fullName || 'Doctor';
+              const initials = doctorName.split(' ').map(n=>n[0]).join('').substring(0,2);
+
+              return (
+                <div key={apt._id} className="apt-card">
                 
-                <div className="apt-card-header">
-                  <div className="doc-profile-small">
-                    <div className="doc-avatar-text">{apt.doctor.split(' ').map(n=>n[0]).join('').substring(0,2)}</div>
-                    <div>
-                      <h3>{apt.doctor}</h3>
-                      <span className="doc-spec">{apt.spec}</span>
+                  <div className="apt-card-header">
+                    <div className="doc-profile-small">
+                      <div className="doc-avatar-text">{initials}</div>
+                      <div>
+                        <h3>{doctorName}</h3>
+                        <span className="doc-spec">{apt.reason || 'Consultation'}</span>
+                      </div>
+                    </div>
+                    <div className="apt-status-wrapper">
+                      {getStatusBadge(apt.status)}
                     </div>
                   </div>
-                  <div className="apt-status-wrapper">
-                    {getStatusBadge(apt.status)}
-                  </div>
-                </div>
 
-                <div className="apt-card-body">
-                  <div className="apt-info-grid">
-                    <div className="info-item">
-                      <Calendar size={16} /> <span>{apt.date}</span>
-                    </div>
-                    <div className="info-item">
-                      <Clock size={16} /> <span>{apt.time}</span>
-                    </div>
-                    <div className="info-item">
-                      <MapPin size={16} /> <span>{apt.hospital}</span>
-                    </div>
-                    <div className="info-item">
-                      {apt.type === 'Video Consult' ? <Video size={16} /> : <User size={16} />}
-                      <span>{apt.type}</span>
+                  <div className="apt-card-body">
+                    <div className="apt-info-grid">
+                      <div className="info-item">
+                        <Calendar size={16} /> <span>{formatDate(apt.date)}</span>
+                      </div>
+                      <div className="info-item">
+                        <Clock size={16} /> <span>{apt.time}</span>
+                      </div>
+                      <div className="info-item">
+                        <CreditCard size={16} /> <span>₹{apt.consultationFee}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* 5. ACTION BUTTONS */}
-                <div className="apt-card-footer">
-                  <span className="apt-id">ID: {apt.id}</span>
-                  <div className="action-buttons">
-                    {activeTab === 'upcoming' && (
-                      <>
-                        <button className="btn-text-danger">Cancel</button>
-                        <button className="btn-outline">Reschedule</button>
-                      </>
-                    )}
-                    {activeTab === 'completed' && (
-                      <button className="btn-outline"><Star size={16} /> Give Feedback</button>
-                    )}
-                    <button className="btn-primary" onClick={() => setSelectedAppointment(apt)}>
-                      View Details
-                    </button>
+                  {/* ACTION BUTTONS */}
+                  <div className="apt-card-footer">
+                    <span className="apt-id">ID: {apt._id?.slice(-8).toUpperCase()}</span>
+                    <div className="action-buttons">
+                      {activeTab === 'upcoming' && (
+                        <button 
+                          className="btn-text-danger" 
+                          onClick={() => handleCancel(apt._id)}
+                          disabled={cancelling === apt._id}
+                        >
+                          {cancelling === apt._id ? 'Cancelling...' : 'Cancel'}
+                        </button>
+                      )}
+                      {activeTab === 'completed' && (
+                        <button className="btn-outline"><Star size={16} /> Give Feedback</button>
+                      )}
+                      <button className="btn-primary" onClick={() => setSelectedAppointment(apt)}>
+                        View Details
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-              </div>
-            ))
+                </div>
+              );
+            })
           ) : (
-            /* 7. EMPTY STATE */
             <div className="empty-state">
               <Calendar size={64} className="empty-icon" />
               <h2>No appointments found</h2>
               <p>You don't have any {activeTab} appointments at the moment.</p>
-              <Link to="/doctors" className="btn-primary mt-4 inline-flex">
+              <Link to="/appointments" className="btn-primary mt-4 inline-flex">
                 <Calendar size={18} /> Book Your First Appointment
               </Link>
             </div>
@@ -172,7 +204,7 @@ const AppointmentHistory = () => {
         </div>
       </div>
 
-      {/* 6. APPOINTMENT DETAILS MODAL */}
+      {/* APPOINTMENT DETAILS MODAL */}
       {selectedAppointment && (
         <div className="apt-modal-overlay" onClick={() => setSelectedAppointment(null)}>
           <div className="apt-modal" onClick={e => e.stopPropagation()}>
@@ -187,15 +219,17 @@ const AppointmentHistory = () => {
               {/* Status Banner */}
               <div className={`modal-banner banner-${selectedAppointment.status}`}>
                 {getStatusBadge(selectedAppointment.status)}
-                <span className="banner-id">Appointment ID: {selectedAppointment.id}</span>
+                <span className="banner-id">ID: {selectedAppointment._id?.slice(-8).toUpperCase()}</span>
               </div>
 
               {/* Doctor Info */}
               <div className="modal-section doc-summary">
-                <div className="doc-avatar-large">{selectedAppointment.doctor.split(' ').map(n=>n[0]).join('').substring(0,2)}</div>
+                <div className="doc-avatar-large">
+                  {(selectedAppointment.doctor?.fullName || 'D').split(' ').map(n=>n[0]).join('').substring(0,2)}
+                </div>
                 <div>
-                  <h3>{selectedAppointment.doctor}</h3>
-                  <p>{selectedAppointment.spec} • {selectedAppointment.hospital}</p>
+                  <h3>{selectedAppointment.doctor?.fullName || 'Doctor'}</h3>
+                  <p>{selectedAppointment.reason || 'Consultation'}</p>
                 </div>
               </div>
 
@@ -203,14 +237,11 @@ const AppointmentHistory = () => {
               <div className="modal-grid">
                 <div className="grid-box">
                   <span className="box-label">Date & Time</span>
-                  <strong className="box-value"><Calendar size={14}/> {selectedAppointment.date} at {selectedAppointment.time}</strong>
+                  <strong className="box-value"><Calendar size={14}/> {formatDate(selectedAppointment.date)} at {selectedAppointment.time}</strong>
                 </div>
                 <div className="grid-box">
-                  <span className="box-label">Consultation Type</span>
-                  <strong className="box-value">
-                    {selectedAppointment.type === 'Video Consult' ? <Video size={14}/> : <User size={14}/>} 
-                    {selectedAppointment.type}
-                  </strong>
+                  <span className="box-label">Status</span>
+                  <strong className="box-value">{selectedAppointment.status}</strong>
                 </div>
               </div>
 
@@ -219,13 +250,7 @@ const AppointmentHistory = () => {
                 <h4 className="section-title"><CreditCard size={18}/> Payment Information</h4>
                 <div className="flex-between">
                   <span>Consultation Fee:</span>
-                  <strong>₹{selectedAppointment.fee}</strong>
-                </div>
-                <div className="flex-between mt-2">
-                  <span>Status:</span>
-                  <strong className={selectedAppointment.payment.includes('Paid') ? 'text-green' : 'text-yellow'}>
-                    {selectedAppointment.payment}
-                  </strong>
+                  <strong>₹{selectedAppointment.consultationFee}</strong>
                 </div>
               </div>
 
@@ -237,28 +262,16 @@ const AppointmentHistory = () => {
                 </div>
               )}
 
-              {/* Cancellation Reason */}
-              {selectedAppointment.cancelReason && (
-                <div className="modal-section border-top bg-red-light">
-                  <h4 className="section-title text-red"><AlertCircle size={18}/> Cancellation Reason</h4>
-                  <p className="notes-text text-red">{selectedAppointment.cancelReason}</p>
+              {selectedAppointment.prescription && (
+                <div className="modal-section border-top bg-light">
+                  <h4 className="section-title"><FileText size={18}/> Prescription</h4>
+                  <p className="notes-text">{selectedAppointment.prescription}</p>
                 </div>
               )}
             </div>
 
             <div className="modal-footer">
-              {selectedAppointment.status === 'completed' ? (
-                <button className="btn-primary full-width"><FileText size={18}/> Download Prescription</button>
-              ) : selectedAppointment.status === 'upcoming' || selectedAppointment.status === 'pending' ? (
-                <div className="action-buttons full-width">
-                  <button className="btn-outline flex-1">Reschedule</button>
-                  {selectedAppointment.type === 'Video Consult' && (
-                     <button className="btn-primary flex-1"><Video size={18}/> Join Call</button>
-                  )}
-                </div>
-              ) : (
-                <button className="btn-secondary full-width" onClick={() => setSelectedAppointment(null)}>Close</button>
-              )}
+              <button className="btn-secondary full-width" onClick={() => setSelectedAppointment(null)}>Close</button>
             </div>
           </div>
         </div>

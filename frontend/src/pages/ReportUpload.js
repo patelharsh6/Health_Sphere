@@ -1,33 +1,55 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   UploadCloud, FileText, Trash2, RefreshCw, 
   Bot, ShieldCheck, CheckCircle, ChevronLeft,
-  Calendar, User, Building, File
+  Calendar, User, Building, File, Loader
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { reportAPI } from '../services/api';
 import './ReportUpload.css';
 
 const ReportUpload = () => {
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [recentUploads, setRecentUploads] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(true);
   
   const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
     reportName: '',
     doctorName: '',
-    reportDate: new Date().toISOString().split('T')[0], // Today's date default
+    reportDate: new Date().toISOString().split('T')[0],
     hospitalName: ''
   });
 
-  // Mock Recent Uploads
-  const [recentUploads, setRecentUploads] = useState([
-    { id: 1, name: "Complete Blood Count.pdf", date: "2026-03-12", status: "Analyzed" },
-    { id: 2, name: "Chest X-Ray.jpg", date: "2026-02-28", status: "Pending" }
-  ]);
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    fetchRecentReports();
+  }, [isAuthenticated, authLoading]);
+
+  const fetchRecentReports = async () => {
+    try {
+      const res = await reportAPI.getMyReports({ limit: 5 });
+      if (res.data.success) {
+        setRecentUploads(res.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch reports:', error);
+    } finally {
+      setLoadingReports(false);
+    }
+  };
 
   // Drag & Drop Handlers
   const handleDragOver = (e) => {
@@ -54,14 +76,12 @@ const ReportUpload = () => {
   };
 
   const handleFileSelection = (selectedFile) => {
-    // Check file type
     const validTypes = ['application/pdf', 'image/jpeg', 'image/png'];
     if (!validTypes.includes(selectedFile.type)) {
       alert('Please upload a PDF, JPG, or PNG file.');
       return;
     }
     
-    // Auto-fill report name based on file name (removing extension)
     const nameWithoutExt = selectedFile.name.replace(/\.[^/.]+$/, "");
     setFormData(prev => ({ ...prev, reportName: nameWithoutExt }));
     
@@ -77,7 +97,7 @@ const ReportUpload = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleUpload = (withAI = false) => {
+  const handleUpload = async (withAI = false) => {
     if (!file) return;
     if (!formData.reportName) {
       alert("Please enter a report name.");
@@ -87,35 +107,50 @@ const ReportUpload = () => {
     setIsUploading(true);
     setUploadProgress(0);
 
-    // Simulate upload progress
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsUploading(false);
-          setUploadSuccess(true);
-          
-          // Add to recent uploads after short delay
-          setTimeout(() => {
-            setRecentUploads([
-              { 
-                id: Date.now(), 
-                name: formData.reportName + (file.type.includes('pdf') ? '.pdf' : '.jpg'), 
-                date: formData.reportDate, 
-                status: withAI ? "Analyzed" : "Pending" 
-              },
-              ...recentUploads
-            ]);
-            // Reset form
-            setFile(null);
-            setUploadProgress(0);
-          }, 1500);
-
-          return 100;
+    // Simulate progress for UX
+    const progressInterval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
         }
         return prev + 10;
       });
     }, 200);
+
+    try {
+      const uploadData = new FormData();
+      uploadData.append('file', file);
+      uploadData.append('title', formData.reportName);
+      uploadData.append('type', 'other');
+
+      const res = await reportAPI.upload(uploadData);
+      
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      if (res.data.success) {
+        setTimeout(() => {
+          setIsUploading(false);
+          setUploadSuccess(true);
+          // Refresh recent uploads
+          fetchRecentReports();
+          // Reset form
+          setFile(null);
+          setUploadProgress(0);
+        }, 500);
+      }
+    } catch (error) {
+      clearInterval(progressInterval);
+      setIsUploading(false);
+      setUploadProgress(0);
+      console.error('Upload failed:', error);
+      alert(error.response?.data?.message || 'Upload failed. Please try again.');
+    }
+  };
+
+  const formatDate = (dateStr) => {
+    return new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
   return (
@@ -139,7 +174,7 @@ const ReportUpload = () => {
         {/* LEFT COLUMN: UPLOAD & FORM */}
         <main className="upload-main-area">
           
-          {/* 2. UPLOAD AREA (Drag & Drop) */}
+          {/* UPLOAD AREA */}
           {!file && !uploadSuccess && (
             <div 
               className={`drag-drop-zone ${isDragging ? 'dragging' : ''}`}
@@ -164,7 +199,7 @@ const ReportUpload = () => {
             </div>
           )}
 
-          {/* 3. FILE PREVIEW & 4. REPORT DETAILS FORM */}
+          {/* FILE PREVIEW & FORM */}
           {file && !uploadSuccess && (
             <div className="file-prep-section">
               
@@ -257,7 +292,7 @@ const ReportUpload = () => {
                 </div>
               )}
 
-              {/* 5. UPLOAD ACTION BUTTONS */}
+              {/* UPLOAD ACTION BUTTONS */}
               {!isUploading && (
                 <div className="upload-actions">
                   <button className="btn-secondary" onClick={() => handleUpload(false)}>
@@ -271,7 +306,7 @@ const ReportUpload = () => {
             </div>
           )}
 
-          {/* 6. SUCCESS STATE */}
+          {/* SUCCESS STATE */}
           {uploadSuccess && (
             <div className="success-state">
               <CheckCircle size={60} className="success-icon" />
@@ -283,7 +318,7 @@ const ReportUpload = () => {
             </div>
           )}
 
-          {/* 8. SECURITY NOTE */}
+          {/* SECURITY NOTE */}
           <div className="security-note">
             <ShieldCheck size={18} className="shield-icon" />
             <p><strong>Bank-Grade Security:</strong> Your medical data is encrypted, securely stored, and strictly private.</p>
@@ -291,35 +326,45 @@ const ReportUpload = () => {
 
         </main>
 
-        {/* RIGHT COLUMN: 7. RECENT UPLOADS */}
+        {/* RIGHT COLUMN: RECENT UPLOADS */}
         <aside className="recent-uploads-sidebar">
           <div className="sidebar-header">
             <h3>Recent Uploads</h3>
           </div>
           
           <div className="recent-list">
-            {recentUploads.map(report => (
-              <div key={report.id} className="recent-report-card">
-                <div className="recent-icon">
-                  {report.name.includes('.pdf') ? <FileText size={20} /> : <File size={20} />}
-                </div>
-                <div className="recent-details">
-                  <h4>{report.name}</h4>
-                  <div className="recent-meta">
-                    <span>{report.date}</span>
-                    <span className={`status-dot ${report.status === 'Analyzed' ? 'analyzed' : 'pending'}`}>
-                      {report.status}
-                    </span>
+            {loadingReports ? (
+              <div style={{ textAlign: 'center', padding: '24px' }}>
+                <Loader size={24} style={{ animation: 'spin 1s linear infinite' }} />
+              </div>
+            ) : recentUploads.length > 0 ? (
+              recentUploads.map(report => (
+                <div key={report._id} className="recent-report-card">
+                  <div className="recent-icon">
+                    <FileText size={20} />
+                  </div>
+                  <div className="recent-details">
+                    <h4>{report.title}</h4>
+                    <div className="recent-meta">
+                      <span>{formatDate(report.uploadDate)}</span>
+                      <span className={`status-dot ${report.aiAnalysis?.summary ? 'analyzed' : 'pending'}`}>
+                        {report.aiAnalysis?.summary ? 'Analyzed' : 'Pending'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="recent-actions">
+                    {!report.aiAnalysis?.summary && (
+                      <button className="action-btn ai-btn" title="Analyze with AI"><Bot size={16} /></button>
+                    )}
+                    <button className="action-btn delete-btn" title="Delete"><Trash2 size={16} /></button>
                   </div>
                 </div>
-                <div className="recent-actions">
-                  {report.status === 'Pending' && (
-                    <button className="action-btn ai-btn" title="Analyze with AI"><Bot size={16} /></button>
-                  )}
-                  <button className="action-btn delete-btn" title="Delete"><Trash2 size={16} /></button>
-                </div>
+              ))
+            ) : (
+              <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8' }}>
+                <p>No reports uploaded yet</p>
               </div>
-            ))}
+            )}
           </div>
           
           <Link to="/dashboard" className="view-all-link">View all in Dashboard</Link>

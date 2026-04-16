@@ -146,6 +146,16 @@
   transform: translateX(-50%) translateY(0);
 }
 
+.dropdown-menu.profile-dropdown {
+  left: auto;
+  right: -5px;
+  transform: translateY(10px);
+}
+
+.dropdown-trigger:hover .dropdown-menu.profile-dropdown {
+  transform: translateY(0);
+}
+
 .dropdown-link {
   display: flex;
   align-items: center;

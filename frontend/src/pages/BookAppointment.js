@@ -1,44 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, Calendar as CalendarIcon, Clock, MapPin, 
   Star, CheckCircle, User, FileText, ChevronLeft, X, 
-  Stethoscope, ShieldCheck
+  Stethoscope, ShieldCheck, Loader
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { doctorAPI, appointmentAPI } from '../services/api';
 import './BookAppointment.css';
-
-// Mock Data for Doctors
-const MOCK_DOCTORS = [
-  { id: 1, name: "Dr. Rahul Sharma", spec: "Cardiologist", exp: 12, hospital: "City Heart Center", fee: 800, rating: 4.8, image: "RS" },
-  { id: 2, name: "Dr. Sneha Patel", spec: "Dermatologist", exp: 8, hospital: "SkinCare Clinic", fee: 600, rating: 4.9, image: "SP" },
-  { id: 3, name: "Dr. Amit Kumar", spec: "General Physician", exp: 15, hospital: "HealthSphere Main", fee: 500, rating: 4.7, image: "AK" },
-  { id: 4, name: "Dr. Priya Singh", spec: "Pediatrician", exp: 10, hospital: "Kids Care Hospital", fee: 700, rating: 4.9, image: "PS" },
-  { id: 5, name: "Dr. Vikram Joshi", spec: "Neurologist", exp: 14, hospital: "Neuro Spine Center", fee: 1000, rating: 4.6, image: "VJ" },
-  { id: 6, name: "Dr. Anjali Desai", spec: "General Physician", exp: 6, hospital: "HealthSphere Main", fee: 400, rating: 4.5, image: "AD" },
-];
 
 const SPECIALIZATIONS = ["All", "General Physician", "Cardiologist", "Dermatologist", "Neurologist", "Pediatrician"];
 
-// Mock Time Slots
-const TIME_SLOTS = [
-  { time: "09:00 AM", available: true },
-  { time: "09:30 AM", available: false },
-  { time: "10:00 AM", available: true },
-  { time: "10:30 AM", available: true },
-  { time: "11:00 AM", available: false },
-  { time: "11:30 AM", available: true },
-  { time: "02:00 PM", available: true },
-  { time: "02:30 PM", available: true },
-  { time: "03:00 PM", available: false },
-];
-
 const BookAppointment = () => {
+  const { user, isAuthenticated, profile } = useAuth();
+  const navigate = useNavigate();
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpec, setSelectedSpec] = useState("All");
   
   // Booking Modal State
   const [selectedDoctor, setSelectedDoctor] = useState(null);
-  const [step, setStep] = useState(1); // 1: Date/Time, 2: Details, 3: Confirm, 4: Success
+  const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [timeSlots, setTimeSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // Form State
   const [bookingData, setBookingData] = useState({
@@ -47,32 +34,112 @@ const BookAppointment = () => {
     reason: ""
   });
 
-  // Filter Doctors
-  const filteredDoctors = MOCK_DOCTORS.filter(doc => {
-    const matchesSearch = doc.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          doc.hospital.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesSpec = selectedSpec === "All" || doc.spec === selectedSpec;
-    return matchesSearch && matchesSpec;
+  useEffect(() => {
+    fetchDoctors();
+  }, [selectedSpec]);
+
+  const fetchDoctors = async () => {
+    try {
+      setLoading(true);
+      const params = { limit: 50 };
+      if (selectedSpec !== 'All') params.specialization = selectedSpec;
+      const res = await doctorAPI.getAll(params);
+      if (res.data.success) {
+        setDoctors(res.data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch doctors:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter Doctors locally by search
+  const filteredDoctors = doctors.filter(doc => {
+    const name = doc.user?.fullName || '';
+    const hospital = doc.hospital || '';
+    const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          hospital.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
   });
+
+  // Fetch available slots when date changes
+  const handleDateChange = async (date) => {
+    setBookingData({ ...bookingData, date, time: '' });
+    if (!selectedDoctor || !date) return;
+
+    setSlotsLoading(true);
+    try {
+      const res = await doctorAPI.getSlots(selectedDoctor._id, date);
+      if (res.data.success) {
+        setTimeSlots(res.data.data);
+      } else {
+        setTimeSlots([]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch slots:', err);
+      setTimeSlots([]);
+    } finally {
+      setSlotsLoading(false);
+    }
+  };
 
   // Handlers
   const openBookingModal = (doctor) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
     setSelectedDoctor(doctor);
     setStep(1);
     setBookingData({ date: "", time: "", reason: "" });
+    setTimeSlots([]);
+    setError('');
   };
 
   const closeBookingModal = () => {
     setSelectedDoctor(null);
+    setError('');
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     setIsProcessing(true);
-    setTimeout(() => {
+    setError('');
+    try {
+      const res = await appointmentAPI.book({
+        doctorId: selectedDoctor._id,
+        date: bookingData.date,
+        time: bookingData.time,
+        reason: bookingData.reason,
+      });
+      if (res.data.success) {
+        setStep(4); // Move to success step
+      } else {
+        setError(res.data.message || 'Booking failed.');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Booking failed. Please try again.';
+      setError(msg);
+    } finally {
       setIsProcessing(false);
-      setStep(4); // Move to success step
-    }, 1500);
+    }
   };
+
+  // Get user display info
+  const patientName = user?.fullName || 'Patient';
+  const patientAge = profile?.age || 'N/A';
+  const patientGender = profile?.gender || 'N/A';
+
+  if (user?.role === 'doctor') {
+    return (
+      <div className="appointment-page" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '80vh', textAlign: 'center'}}>
+        <Stethoscope size={64} style={{color: '#94a3b8', marginBottom: '20px'}}/>
+        <h2>Restricted Access</h2>
+        <p style={{color: '#64748b', maxWidth: '400px', margin: '10px auto 20px'}}>This page is for patients to book appointments. As a doctor, you can manage your appointments from your schedule.</p>
+        <button className="btn-primary" onClick={() => navigate('/doc-schedule')}>Go to My Schedule</button>
+      </div>
+    );
+  }
 
   return (
     <div className="appointment-page">
@@ -88,7 +155,7 @@ const BookAppointment = () => {
 
       <div className="appointment-layout">
         
-        {/* 2. SEARCH & FILTERS (Left on Desktop, Top on Mobile) */}
+        {/* 2. SEARCH & FILTERS */}
         <aside className="filters-sidebar">
           <div className="search-box">
             <Search size={18} className="search-icon" />
@@ -123,56 +190,65 @@ const BookAppointment = () => {
             <span>{filteredDoctors.length} found</span>
           </div>
 
-          <div className="doctors-grid">
-            {filteredDoctors.map(doc => (
-              <div key={doc.id} className="doctor-card">
-                <div className="doc-card-header">
-                  <div className="doc-avatar">{doc.image}</div>
-                  <div className="doc-basic-info">
-                    <h3>{doc.name}</h3>
-                    <span className="doc-spec">{doc.spec}</span>
-                    <div className="doc-rating">
-                      <Star size={14} className="star-icon" fill="#eab308" />
-                      <span>{doc.rating} Rating</span>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '60px' }}>
+              <Loader size={40} style={{ animation: 'spin 1s linear infinite' }} />
+              <p style={{ marginTop: '16px', color: '#94a3b8' }}>Loading doctors...</p>
+            </div>
+          ) : (
+            <div className="doctors-grid">
+              {filteredDoctors.map(doc => {
+                const name = doc.user?.fullName || 'Doctor';
+                const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2);
+                return (
+                  <div key={doc._id} className="doctor-card">
+                    <div className="doc-card-header">
+                      <div className="doc-avatar">{initials}</div>
+                      <div className="doc-basic-info">
+                        <h3>{name}</h3>
+                        <span className="doc-spec">{doc.specialization}</span>
+                        <div className="doc-rating">
+                          <Star size={14} className="star-icon" fill="#eab308" />
+                          <span>{doc.rating || 0} Rating</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="doc-details">
+                      <div className="detail-row">
+                        <Stethoscope size={16} /> <span>{doc.experience || 0} Years Experience</span>
+                      </div>
+                      <div className="detail-row">
+                        <MapPin size={16} /> <span>{doc.hospital}</span>
+                      </div>
+                      <div className="detail-row fee-row">
+                        <FileText size={16} /> <span>Consultation: <strong>₹{doc.consultationFee}</strong></span>
+                      </div>
+                    </div>
+
+                    <div className="doc-actions">
+                      <button className="btn-outline-primary">View Profile</button>
+                      <button className="btn-primary" onClick={() => openBookingModal(doc)}>
+                        Book Appointment
+                      </button>
                     </div>
                   </div>
+                );
+              })}
+              
+              {filteredDoctors.length === 0 && (
+                <div className="no-doctors">
+                  <Stethoscope size={40} />
+                  <h3>No doctors found</h3>
+                  <p>Try adjusting your search or filters.</p>
                 </div>
-                
-                <div className="doc-details">
-                  <div className="detail-row">
-                    <Stethoscope size={16} /> <span>{doc.exp} Years Experience</span>
-                  </div>
-                  <div className="detail-row">
-                    <MapPin size={16} /> <span>{doc.hospital}</span>
-                  </div>
-                  <div className="detail-row fee-row">
-                    <FileText size={16} /> <span>Consultation: <strong>₹{doc.fee}</strong></span>
-                  </div>
-                </div>
-
-                <div className="doc-actions">
-                  <button className="btn-outline-primary">View Profile</button>
-                  <button className="btn-primary" onClick={() => openBookingModal(doc)}>
-                    Book Appointment
-                  </button>
-                </div>
-              </div>
-            ))}
-            
-            {filteredDoctors.length === 0 && (
-              <div className="no-doctors">
-                <Stethoscope size={40} />
-                <h3>No doctors found</h3>
-                <p>Try adjusting your search or filters.</p>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </main>
       </div>
 
-      {/* =========================================
-          BOOKING MODAL (Step-by-Step Flow)
-          ========================================= */}
+      {/* BOOKING MODAL */}
       {selectedDoctor && (
         <div className="booking-modal-overlay">
           <div className="booking-modal">
@@ -194,13 +270,15 @@ const BookAppointment = () => {
 
             <div className="modal-body">
               
-              {/* Doctor Profile Preview (Always visible in steps 1-3) */}
+              {/* Doctor Profile Preview */}
               {step < 4 && (
                 <div className="booking-doc-preview">
-                  <div className="doc-avatar small">{selectedDoctor.image}</div>
+                  <div className="doc-avatar small">
+                    {(selectedDoctor.user?.fullName || 'D').split(' ').map(n => n[0]).join('').substring(0, 2)}
+                  </div>
                   <div>
-                    <h3>{selectedDoctor.name}</h3>
-                    <p>{selectedDoctor.spec} • {selectedDoctor.hospital}</p>
+                    <h3>{selectedDoctor.user?.fullName}</h3>
+                    <p>{selectedDoctor.specialization} • {selectedDoctor.hospital}</p>
                   </div>
                 </div>
               )}
@@ -218,7 +296,7 @@ const BookAppointment = () => {
                         type="date" 
                         min={new Date().toISOString().split('T')[0]} 
                         value={bookingData.date}
-                        onChange={(e) => setBookingData({...bookingData, date: e.target.value})}
+                        onChange={(e) => handleDateChange(e.target.value)}
                       />
                     </div>
                   </div>
@@ -226,18 +304,24 @@ const BookAppointment = () => {
                   {bookingData.date && (
                     <div className="form-group">
                       <label>Available Slots</label>
-                      <div className="time-slots-grid">
-                        {TIME_SLOTS.map((slot, idx) => (
-                          <button 
-                            key={idx}
-                            disabled={!slot.available}
-                            className={`time-slot ${bookingData.time === slot.time ? 'selected' : ''} ${!slot.available ? 'disabled' : ''}`}
-                            onClick={() => setBookingData({...bookingData, time: slot.time})}
-                          >
-                            {slot.time}
-                          </button>
-                        ))}
-                      </div>
+                      {slotsLoading ? (
+                        <p style={{ color: '#94a3b8', textAlign: 'center', padding: '16px' }}>Loading slots...</p>
+                      ) : timeSlots.length > 0 ? (
+                        <div className="time-slots-grid">
+                          {timeSlots.map((slot, idx) => (
+                            <button 
+                              key={idx}
+                              disabled={!slot.available}
+                              className={`time-slot ${bookingData.time === slot.time ? 'selected' : ''} ${!slot.available ? 'disabled' : ''}`}
+                              onClick={() => setBookingData({...bookingData, time: slot.time})}
+                            >
+                              {slot.time}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ color: '#94a3b8', textAlign: 'center', padding: '16px' }}>No slots available for this date</p>
+                      )}
                     </div>
                   )}
 
@@ -256,7 +340,6 @@ const BookAppointment = () => {
                 <div className="booking-step slide-in">
                   <h2 className="step-title">Patient Details</h2>
                   
-                  {/* Auto-filled mock data */}
                   <div className="auto-fill-notice">
                     <ShieldCheck size={16} /> 
                     <span>Information auto-filled from your profile.</span>
@@ -264,10 +347,10 @@ const BookAppointment = () => {
 
                   <div className="patient-read-only">
                     <div className="read-group">
-                      <User size={16} /> <strong>Name:</strong> Harsh Patel
+                      <User size={16} /> <strong>Name:</strong> {patientName}
                     </div>
                     <div className="read-group">
-                      <FileText size={16} /> <strong>Age:</strong> 24 | <strong>Gender:</strong> Male
+                      <FileText size={16} /> <strong>Age:</strong> {patientAge} | <strong>Gender:</strong> {patientGender}
                     </div>
                   </div>
 
@@ -299,7 +382,7 @@ const BookAppointment = () => {
                     </div>
                     <div className="summary-row">
                       <span>Doctor</span>
-                      <strong>{selectedDoctor.name}</strong>
+                      <strong>{selectedDoctor.user?.fullName}</strong>
                     </div>
                     <div className="summary-row">
                       <span>Hospital</span>
@@ -307,9 +390,11 @@ const BookAppointment = () => {
                     </div>
                     <div className="summary-row total-row">
                       <span>Consultation Fee</span>
-                      <strong>₹{selectedDoctor.fee}</strong>
+                      <strong>₹{selectedDoctor.consultationFee}</strong>
                     </div>
                   </div>
+
+                  {error && <div style={{ color: '#ef4444', textAlign: 'center', marginTop: '12px' }}>{error}</div>}
 
                   <button 
                     className="btn-primary full-width mt-4"
@@ -326,7 +411,7 @@ const BookAppointment = () => {
                 <div className="booking-step success-step scale-in">
                   <CheckCircle size={64} className="success-icon" />
                   <h2>Appointment Booked!</h2>
-                  <p>Your appointment with <strong>{selectedDoctor.name}</strong> has been confirmed for <strong>{bookingData.date}</strong> at <strong>{bookingData.time}</strong>.</p>
+                  <p>Your appointment with <strong>{selectedDoctor.user?.fullName}</strong> has been confirmed for <strong>{bookingData.date}</strong> at <strong>{bookingData.time}</strong>.</p>
                   
                   <div className="success-actions">
                     <button className="btn-outline-primary" onClick={closeBookingModal}>

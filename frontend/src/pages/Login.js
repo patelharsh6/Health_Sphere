@@ -3,34 +3,50 @@ import {
   Mail, Lock, Eye, EyeOff, ShieldCheck, 
   Activity, ArrowRight, CheckCircle 
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
 const Login = () => {
-  const [role, setRole] = useState('patient'); // 'patient', 'doctor', 'admin'
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const [role, setRole] = useState('patient');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (!formData.email || !formData.password) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
     setIsLoading(true);
 
-    // SIMULATION: Fake network delay
-    setTimeout(() => {
-      if (!formData.email || !formData.password) {
-        setError("Please fill in all fields.");
-        setIsLoading(false);
-        return;
+    try {
+      const result = await login(formData.email, formData.password, role);
+      if (result.success) {
+        // Redirect based on role
+        if (result.user.role === 'patient') {
+          navigate('/dashboard');
+        } else if (result.user.role === 'doctor') {
+          navigate('/doc-dashboard');
+        } else {
+          navigate('/admin');
+        }
+      } else {
+        setError(result.message || 'Login failed. Please try again.');
       }
-
-      // Mock Redirect Logic (For Viva explanation)
-      alert(`Login Successful! Redirecting to ${role.toUpperCase()} Dashboard...`);
-      
-      // In real app, you would do: navigate(`/${role}-dashboard`);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Login failed. Please check your credentials.';
+      setError(msg);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -58,7 +74,6 @@ const Login = () => {
           </div>
 
           <div className="brand-illustration">
-             {/* Abstract medical visual */}
              <div className="pulse-circle"></div>
           </div>
         </div>
@@ -150,7 +165,7 @@ const Login = () => {
           </form>
 
           <div className="form-footer">
-            <p>Don't have an account? <a href="#">Register here</a></p>
+            <p>Don't have an account? <a href="/signup">Register here</a></p>
             <div className="security-badge">
               <ShieldCheck size={14} /> Your data is 256-bit encrypted
             </div>

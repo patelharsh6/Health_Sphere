@@ -4,6 +4,8 @@ import {
   Stethoscope, Info, Bot, Thermometer, 
   ArrowRight, ShieldAlert, Calendar 
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { aiAPI } from '../services/api';
 import './SymptomChecker.css';
 
 const commonSymptomsList = [
@@ -12,7 +14,6 @@ const commonSymptomsList = [
 ];
 
 const SymptomChecker = () => {
-  // Form State
   const [symptomInput, setSymptomInput] = useState('');
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
   const [patientData, setPatientData] = useState({
@@ -22,11 +23,10 @@ const SymptomChecker = () => {
     severity: 'moderate'
   });
 
-  // UI State
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState(null);
+  const [apiError, setApiError] = useState('');
 
-  // Handle Symptom Input
   const handleAddSymptom = (symptom) => {
     if (symptom && !selectedSymptoms.includes(symptom)) {
       setSelectedSymptoms([...selectedSymptoms, symptom]);
@@ -45,8 +45,7 @@ const SymptomChecker = () => {
     setSelectedSymptoms(selectedSymptoms.filter(s => s !== symptomToRemove));
   };
 
-  // Simulate ML Analysis
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     if (selectedSymptoms.length === 0) {
       alert("Please enter at least one symptom.");
       return;
@@ -54,23 +53,46 @@ const SymptomChecker = () => {
 
     setIsAnalyzing(true);
     setResults(null);
+    setApiError('');
 
-    // Fake network/ML processing delay
-    setTimeout(() => {
-      // Generate mock results based on severity to make it feel dynamic
-      const isSevere = patientData.severity === 'severe' || selectedSymptoms.includes('Chest Pain');
+    try {
+      const res = await aiAPI.symptomCheck(selectedSymptoms);
+      if (res.data.success) {
+        const data = res.data.data;
+        const isSevere = patientData.severity === 'severe' || 
+                         selectedSymptoms.includes('Chest Pain') ||
+                         (data.length > 0 && data[0].disease?.severity === 'severe');
+        
+        setResults({
+          riskLevel: isSevere ? 'High Risk' : data.length > 0 ? 'Moderate Risk' : 'Low Risk',
+          riskColor: isSevere ? 'red' : data.length > 0 ? 'yellow' : 'green',
+          predictions: data.slice(0, 3).map(item => ({
+            name: item.disease?.name || 'Unknown',
+            probability: item.matchScore || 0,
+            slug: item.disease?.slug || '',
+            specialistType: item.disease?.specialistType || 'General Physician'
+          })),
+          disclaimer: res.data.disclaimer
+        });
+      }
+    } catch (error) {
+      console.error('Symptom check failed:', error);
+      setApiError('Failed to analyze symptoms. Please try again.');
       
+      // Fallback to client-side mock if API fails
+      const isSevere = patientData.severity === 'severe' || selectedSymptoms.includes('Chest Pain');
       setResults({
         riskLevel: isSevere ? 'High Risk' : 'Moderate Risk',
         riskColor: isSevere ? 'red' : 'yellow',
         predictions: [
-          { name: isSevere ? "Pneumonia / Severe Infection" : "Viral Flu", probability: 65 },
-          { name: "Seasonal Allergies", probability: 20 },
-          { name: "Common Cold", probability: 15 }
+          { name: isSevere ? "Pneumonia / Severe Infection" : "Viral Flu", probability: 65, slug: 'influenza' },
+          { name: "Seasonal Allergies", probability: 20, slug: '' },
+          { name: "Common Cold", probability: 15, slug: 'common-cold' }
         ]
       });
+    } finally {
       setIsAnalyzing(false);
-    }, 2500);
+    }
   };
 
   return (
@@ -92,7 +114,6 @@ const SymptomChecker = () => {
         {/* LEFT COLUMN: INPUT FORM */}
         <div className="symptom-form-section">
           
-          {/* Patient Context */}
           <div className="form-card">
             <h3>1. Patient Details</h3>
             <div className="input-grid">
@@ -145,7 +166,6 @@ const SymptomChecker = () => {
             </div>
           </div>
 
-          {/* Symptom Input */}
           <div className="form-card">
             <h3>2. Add Symptoms</h3>
             
@@ -166,7 +186,6 @@ const SymptomChecker = () => {
               </button>
             </div>
 
-            {/* Suggested Symptoms */}
             <div className="suggestions">
               <span className="suggestion-label">Suggestions:</span>
               {commonSymptomsList.map(sym => (
@@ -181,7 +200,6 @@ const SymptomChecker = () => {
               ))}
             </div>
 
-            {/* Selected Symptoms Tags */}
             <div className="selected-symptoms">
               {selectedSymptoms.length === 0 ? (
                 <p className="no-symptoms-text">No symptoms added yet.</p>
@@ -209,7 +227,6 @@ const SymptomChecker = () => {
         {/* RIGHT COLUMN: PREDICTION RESULTS */}
         <div className="symptom-results-section">
           
-          {/* Empty State */}
           {!isAnalyzing && !results && (
             <div className="empty-results">
               <Bot size={48} className="empty-icon" />
@@ -218,20 +235,17 @@ const SymptomChecker = () => {
             </div>
           )}
 
-          {/* Loading State */}
           {isAnalyzing && (
             <div className="loading-results">
               <div className="loader-spinner"></div>
               <h3>Running AI Models...</h3>
-              <p>Comparing your symptoms against thousands of medical records.</p>
+              <p>Comparing your symptoms against medical records database.</p>
             </div>
           )}
 
-          {/* Actual Results */}
           {results && !isAnalyzing && (
             <div className="results-card">
               
-              {/* Risk Indicator */}
               <div className={`risk-banner risk-${results.riskColor}`}>
                 <AlertTriangle size={24} />
                 <div className="risk-text">
@@ -243,11 +257,10 @@ const SymptomChecker = () => {
                   </p>
                 </div>
                 {results.riskColor === 'red' && (
-                  <button className="book-btn-small">Book Doctor</button>
+                  <Link to="/appointments" className="book-btn-small" style={{ textDecoration: 'none' }}>Book Doctor</Link>
                 )}
               </div>
 
-              {/* Predictions */}
               <div className="predictions-list">
                 <h3>Possible Conditions</h3>
                 {results.predictions.map((pred, idx) => (
@@ -256,7 +269,11 @@ const SymptomChecker = () => {
                       <div className="pred-rank">{idx + 1}</div>
                       <div>
                         <h4>{pred.name}</h4>
-                        <a href="#" className="learn-more-link">Learn about this disease</a>
+                        {pred.slug && (
+                          <Link to={`/diseases/${pred.slug}`} className="learn-more-link">
+                            Learn about this disease
+                          </Link>
+                        )}
                       </div>
                     </div>
                     <div className="pred-probability">
@@ -269,20 +286,18 @@ const SymptomChecker = () => {
                 ))}
               </div>
 
-              {/* Recommendations */}
               <div className="recommendations">
                 <h3>Recommended Actions</h3>
                 <ul>
                   <li><Thermometer size={16}/> Rest and stay hydrated.</li>
                   <li><Activity size={16}/> Monitor symptoms for the next 24 hours.</li>
-                  <li><Stethoscope size={16}/> <a href="/appointments">Consult a doctor</a> for a formal diagnosis.</li>
+                  <li><Stethoscope size={16}/> <Link to="/appointments">Consult a doctor</Link> for a formal diagnosis.</li>
                 </ul>
               </div>
 
-              {/* AI Ethics Notice (Viva Point) */}
               <div className="ai-ethics-notice">
                 <ShieldAlert size={16} />
-                <p><strong>AI Ethics Notice:</strong> HealthSphere AI provides assistance and should not replace professional medical advice, diagnosis, or treatment.</p>
+                <p><strong>AI Ethics Notice:</strong> {results.disclaimer || 'HealthSphere AI provides assistance and should not replace professional medical advice, diagnosis, or treatment.'}</p>
               </div>
 
             </div>
