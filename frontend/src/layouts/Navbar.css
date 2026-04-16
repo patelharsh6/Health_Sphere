@@ -207,6 +207,7 @@
   background: linear-gradient(135deg, #ccfbf1 0%, #e0f2fe 100%);
   color: var(--primary-dark);
   padding: 8px 14px;
+  margin-top: auto;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 700;
