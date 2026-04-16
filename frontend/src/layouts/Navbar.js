@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Menu, X, Search, User, ChevronDown, Activity, 
   Pill, Stethoscope, FileText, Calendar, Upload, 
-  Bot, Bell, LayoutDashboard, ShieldCheck, LogOut 
+  Bot, Bell, LayoutDashboard, ShieldCheck, LogOut,
+  Heart, BookOpen
 } from 'lucide-react';
 import './Navbar.css';
 import { Link, useNavigate } from 'react-router-dom';
@@ -58,10 +59,6 @@ const Navbar = () => {
     navigate('/login');
   };
 
-  const profileClick = () => {
-    navigate('/profile');
-  };
-
   // Get user initials for avatar
   const getInitials = () => {
     if (!user?.fullName) return 'U';
@@ -74,7 +71,7 @@ const Navbar = () => {
         <div className="navbar-container">
           
           {/* LEFT: LOGO */}
-          <a href="/" className="brand">
+          <Link to="/" className="brand">
             <div className="logo-icon">
               <Activity size={24} />
             </div>
@@ -82,7 +79,7 @@ const Navbar = () => {
               <h1>HealthSphere</h1>
               <span>Advanced Healthcare</span>
             </div>
-          </a>
+          </Link>
 
           {/* CENTER: SEARCH */}
           <div className="search-wrapper">
@@ -100,13 +97,19 @@ const Navbar = () => {
             <div className="nav-item dropdown-trigger">
               <span>Explore</span> <ChevronDown size={14} />
               <div className="dropdown-menu">
-                <a href="/symptoms" className="dropdown-link">
+                <Link to="/symptoms" className="dropdown-link">
                   <Stethoscope size={16} /> Symptom Checker
-                </a>
+                </Link>
+                <Link to="/diseases" className="dropdown-link">
+                  <BookOpen size={16} /> Disease Encyclopedia
+                </Link>
+                <Link to="/medicines" className="dropdown-link">
+                  <Pill size={16} /> Medicine Info
+                </Link>
                 {userRole !== 'doctor' && (
-                  <a href="/doctors" className="dropdown-link">
-                    <Activity size={16} /> Find Doctors
-                  </a>
+                  <Link to="/doctors" className="dropdown-link">
+                    <Heart size={16} /> Find Doctors
+                  </Link>
                 )}
               </div>
             </div>
@@ -118,20 +121,20 @@ const Navbar = () => {
             </div>
 
             {isAuthenticated ? (
-              <div className="profile-actions" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div className="profile-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <button className="icon-btn"><Bell size={20} /></button>
                 
                 <div className="nav-item dropdown-trigger" style={{ padding: 0 }}>
                   <button className="avatar-btn" title={user?.fullName} style={{ pointerEvents: 'none' }}>
                     {getInitials()}
                   </button>
-                  <div className="dropdown-menu profile-dropdown" style={{ minWidth: '180px' }}>
-                    <a href={userRole === 'doctor' ? "/doc-dashboard" : "/dashboard"} className="dropdown-link">
+                  <div className="dropdown-menu profile-dropdown" style={{ minWidth: '190px' }}>
+                    <Link to={userRole === 'doctor' ? "/doc-dashboard" : "/dashboard"} className="dropdown-link">
                       <LayoutDashboard size={16} /> Dashboard
-                    </a>
-                    <a href="/profile" className="dropdown-link">
+                    </Link>
+                    <Link to="/profile" className="dropdown-link">
                       <User size={16} /> My Profile
-                    </a>
+                    </Link>
                     <button className="dropdown-link" onClick={handleLogout} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', color: 'inherit' }}>
                       <LogOut size={16} /> Logout
                     </button>
@@ -176,25 +179,37 @@ const Navbar = () => {
           <div className="mobile-section">
             <h3>My Health ({userRole})</h3>
             {currentLinks.map((link, index) => (
-              <a key={index} href={link.href} className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
+              <Link key={index} to={link.href} className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
                 <span className="icon-box">{link.icon}</span>
                 {link.name}
-              </a>
+              </Link>
             ))}
           </div>
 
           <div className="mobile-section">
             <h3>Explore Health</h3>
-            <a href="/symptoms" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
+            <Link to="/symptoms" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
               <span className="icon-box"><Stethoscope size={20} /></span>
               Symptom Checker
-            </a>
+            </Link>
+            <Link to="/diseases" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
+              <span className="icon-box"><BookOpen size={20} /></span>
+              Disease Encyclopedia
+            </Link>
+            <Link to="/medicines" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
+              <span className="icon-box"><Pill size={20} /></span>
+              Medicine Info
+            </Link>
             {userRole !== 'doctor' && (
-              <a href="/doctors" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
-                 <span className="icon-box"><Activity size={20} /></span>
+              <Link to="/doctors" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
+                 <span className="icon-box"><Heart size={20} /></span>
                  Find Doctors
-              </a>
+              </Link>
             )}
+            <Link to="/ai-assistant" className="mobile-link" onClick={() => setIsMobileMenuOpen(false)}>
+              <span className="icon-box"><Bot size={20} /></span>
+              AI Assistant
+            </Link>
           </div>
 
           <div className="mobile-footer">
@@ -204,8 +219,8 @@ const Navbar = () => {
               </button>
             ) : (
               <div style={{ display: 'flex', gap: '10px' }}>
-                <a href="/login" className="logout-btn" style={{ textDecoration: 'none', textAlign: 'center' }}>Login</a>
-                <a href="/signup" className="logout-btn" style={{ textDecoration: 'none', textAlign: 'center' }}>Sign Up</a>
+                <Link to="/login" className="logout-btn" style={{ textDecoration: 'none', textAlign: 'center', background: '#f0fdfa', color: '#0d9488' }}>Login</Link>
+                <Link to="/signup" className="logout-btn" style={{ textDecoration: 'none', textAlign: 'center', background: '#0d9488', color: 'white' }}>Sign Up</Link>
               </div>
             )}
           </div>

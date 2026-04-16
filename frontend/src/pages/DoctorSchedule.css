@@ -1,0 +1,473 @@
+/* =========================================
+   DOCTOR SCHEDULE PAGE
+   ========================================= */
+
+.ds-page {
+  min-height: 100vh;
+  background: #f8fafc;
+  font-family: 'Inter', sans-serif;
+}
+
+.ds-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Header */
+.ds-header {
+  padding: 100px 0 40px;
+  background: linear-gradient(180deg, #faf5ff 0%, #f8fafc 100%);
+}
+
+.ds-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 20px;
+  transition: color 0.2s;
+}
+
+.ds-back:hover {
+  color: #8b5cf6;
+}
+
+.ds-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.ds-header h1 {
+  font-size: 32px;
+  font-weight: 800;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.ds-header h1 svg {
+  color: #8b5cf6;
+}
+
+.ds-header p {
+  color: #64748b;
+  font-size: 16px;
+}
+
+.ds-header-stats {
+  display: flex;
+  gap: 16px;
+}
+
+.ds-stat-card {
+  text-align: center;
+  background: white;
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.ds-stat-value {
+  display: block;
+  font-size: 28px;
+  font-weight: 800;
+  color: #8b5cf6;
+}
+
+.ds-stat-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+/* Main */
+.ds-main {
+  padding: 30px 0 60px;
+}
+
+.ds-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+  align-items: start;
+}
+
+/* Panel */
+.ds-schedule-panel, .ds-appointments-panel {
+  background: white;
+  border: 1px solid #f1f5f9;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.ds-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.ds-panel-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.ds-save-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.ds-save-btn:hover {
+  background: #7c3aed;
+}
+
+.ds-save-btn:disabled {
+  background: #a78bfa;
+  cursor: not-allowed;
+}
+
+.ds-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: ds-spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes ds-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ds-view-all {
+  color: #8b5cf6;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ds-view-all:hover {
+  text-decoration: underline;
+}
+
+/* Day Tabs */
+.ds-day-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.ds-day-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.ds-day-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 16px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  min-width: 60px;
+}
+
+.ds-day-tab.active {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: white;
+}
+
+.ds-day-tab.disabled-day:not(.active) {
+  opacity: 0.5;
+}
+
+.ds-day-name {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ds-day-slots {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+/* Day Config */
+.ds-day-config {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 24px;
+}
+
+.ds-day-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.ds-day-toggle-row h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* Toggle */
+.ds-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.ds-toggle input {
+  display: none;
+}
+
+.ds-toggle-slider {
+  width: 44px;
+  height: 24px;
+  background: #e2e8f0;
+  border-radius: 12px;
+  position: relative;
+  transition: background 0.3s;
+}
+
+.ds-toggle-slider::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.3s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.ds-toggle input:checked + .ds-toggle-slider {
+  background: #8b5cf6;
+}
+
+.ds-toggle input:checked + .ds-toggle-slider::after {
+  transform: translateX(20px);
+}
+
+.ds-toggle-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+/* Slot Grid */
+.ds-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+}
+
+.ds-slot-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  position: relative;
+}
+
+.ds-slot-btn:hover {
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+}
+
+.ds-slot-btn.active {
+  background: #faf5ff;
+  border-color: #8b5cf6;
+  color: #7c3aed;
+}
+
+.ds-check {
+  color: #8b5cf6;
+}
+
+/* Off Day */
+.ds-off-day {
+  text-align: center;
+  padding: 40px 20px;
+  color: #94a3b8;
+}
+
+.ds-off-day p {
+  margin-top: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.ds-off-day span {
+  font-size: 13px;
+  display: block;
+  margin-top: 4px;
+}
+
+/* Appointments */
+.ds-appt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ds-appt-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.ds-appt-card:hover {
+  background: #faf5ff;
+  border-color: #e2e8f0;
+}
+
+.ds-appt-time-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 52px;
+}
+
+.ds-appt-time {
+  font-size: 14px;
+  font-weight: 700;
+  color: #8b5cf6;
+}
+
+.ds-appt-date {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.ds-appt-info {
+  flex: 1;
+}
+
+.ds-appt-info h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 2px;
+}
+
+.ds-appt-info p {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+.ds-appt-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.ds-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* Quick Info */
+.ds-quick-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 10px;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.ds-quick-info svg {
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .ds-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ds-header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .ds-header h1 {
+    font-size: 24px;
+  }
+
+  .ds-slot-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .ds-header-stats {
+    width: 100%;
+  }
+
+  .ds-stat-card {
+    flex: 1;
+  }
+}
