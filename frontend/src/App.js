@@ -49,6 +49,8 @@ function App() {
         <Route path="/doc-dashboard" element={<DoctorDashboard />} />
         <Route path="/patients" element={<DoctorPatients />} />
         <Route path="/schedule" element={<DoctorSchedule />} />
+        <Route path="/doc_schedule" element={<DoctorSchedule />} />
+        <Route path="/doc-schedule" element={<DoctorSchedule />} />
         <Route path="/upload" element={<ReportUpload />} />
         <Route path="/reports" element={<ReportUpload />} />
         <Route path="/analysis/:id" element={<ReportAnalysis />} />

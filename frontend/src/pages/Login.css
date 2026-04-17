@@ -86,6 +86,11 @@
   transition: all 0.2s;
 }
 
+.trust-item svg {
+  flex-shrink: 0;
+  min-width: 20px;
+}
+
 .trust-item:hover {
   background: rgba(255, 255, 255, 0.12);
   transform: translateX(4px);
@@ -233,17 +238,25 @@
   position: relative;
   display: flex;
   align-items: center;
+  overflow: visible;
 }
 
 .input-icon {
   position: absolute;
-  left: 14px;
+  left: 16px;
   color: #94a3b8;
+  z-index: 1;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
 }
 
 .input-wrapper input {
   width: 100%;
-  padding: 13px 44px;
+  padding: 13px 44px 13px 46px;
   border: 1.5px solid #e2e8f0;
   border-radius: 10px;
   font-size: 14px;
@@ -251,6 +264,7 @@
   transition: all 0.2s;
   font-family: inherit;
   color: #1e293b;
+  background: #ffffff;
 }
 
 .input-wrapper input:focus {
