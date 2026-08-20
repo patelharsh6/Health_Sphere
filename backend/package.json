@@ -8,7 +8,13 @@
     "dev": "nodemon server.js",
     "seed": "node src/utils/seeder.js"
   },
-  "keywords": ["health", "medical", "api", "express", "mongodb"],
+  "keywords": [
+    "health",
+    "medical",
+    "api",
+    "express",
+    "mongodb"
+  ],
   "author": "HealthSphere Team",
   "license": "ISC",
   "dependencies": {
@@ -16,6 +22,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
+    "express-rate-limit": "^8.6.2",
     "express-validator": "^7.2.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.7.0",
