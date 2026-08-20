@@ -1,22 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   User, Mail, Phone, Calendar, Edit2, Save,
   X, Droplet, Activity, AlertCircle, Shield,
   Heart, Bell, Lock, LogOut, Camera, MapPin,
-  CheckCircle, ChevronLeft, Loader
+  CheckCircle, ChevronLeft, Loader, KeyRound, Eye, EyeOff
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { patientAPI, doctorAPI } from '../services/api';
+import { patientAPI, doctorAPI, assetUrl } from '../services/api';
 import './UserProfile.css';
 
 const UserProfile = () => {
-  const { user, profile, isAuthenticated, loading: authLoading, logout, refreshProfile } = useAuth();
+  const {
+    user, profile, isAuthenticated, loading: authLoading,
+    logout, refreshProfile, changePassword, uploadAvatar, isVerified,
+  } = useAuth();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // ── Avatar ──
+  const fileInputRef = useRef(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
+
+  // ── Change password ──
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [pwErrors, setPwErrors] = useState({});
+  const [pwSaving, setPwSaving] = useState(false);
+  const [showPw, setShowPw] = useState(false);
 
   const [userData, setUserData] = useState({
     firstName: '',
@@ -133,6 +148,102 @@ const UserProfile = () => {
     }
   };
 
+  // ──────────────────────────────────────────────
+  // AVATAR
+  // ──────────────────────────────────────────────
+
+  const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+  const ALLOWED_AVATAR_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    // Allow re-selecting the same file after a failed attempt.
+    e.target.value = '';
+    if (!file) return;
+
+    setAvatarError('');
+
+    // Check client-side too so an obviously wrong file never costs a round trip.
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      setAvatarError('Please choose a JPEG, PNG, or WebP image.');
+      return;
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      setAvatarError('Image is too large. Maximum size is 2 MB.');
+      return;
+    }
+
+    setAvatarUploading(true);
+    try {
+      await uploadAvatar(file);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      setAvatarError(error.response?.data?.message || 'Failed to upload the image.');
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  // ──────────────────────────────────────────────
+  // CHANGE PASSWORD
+  // ──────────────────────────────────────────────
+
+  // Same rule the server enforces, so the form fails fast with the same message.
+  const STRONG_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+  const openPasswordModal = () => {
+    setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    setPwErrors({});
+    setShowPw(false);
+    setShowPasswordModal(true);
+  };
+
+  const handlePwChange = (e) => {
+    const { name, value } = e.target;
+    setPwForm((prev) => ({ ...prev, [name]: value }));
+    if (pwErrors[name] || pwErrors.form) {
+      setPwErrors((prev) => ({ ...prev, [name]: '', form: '' }));
+    }
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+
+    const errors = {};
+    if (!pwForm.currentPassword) errors.currentPassword = 'Enter your current password.';
+    if (!STRONG_PASSWORD.test(pwForm.newPassword)) {
+      errors.newPassword = 'Min 8 chars: 1 Upper, 1 Lower, 1 Number, 1 Special';
+    }
+    if (pwForm.newPassword && pwForm.newPassword === pwForm.currentPassword) {
+      errors.newPassword = 'The new password must be different from the current one.';
+    }
+    if (pwForm.newPassword !== pwForm.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match.';
+    }
+    if (Object.keys(errors).length) {
+      setPwErrors(errors);
+      return;
+    }
+
+    setPwSaving(true);
+    try {
+      await changePassword(pwForm.currentPassword, pwForm.newPassword);
+      setShowPasswordModal(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      const data = error.response?.data;
+      setPwErrors(
+        data?.errors
+          ? data.errors
+          : { form: data?.message || 'Failed to change the password.' }
+      );
+    } finally {
+      setPwSaving(false);
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -177,6 +288,23 @@ const UserProfile = () => {
         </div>
       )}
 
+      {/* A doctor stays hidden from patient-facing doctor lists until an
+          administrator verifies their medical license. */}
+      {user?.role === 'doctor' && !isVerified && (
+        <div className="verify-banner-wrap">
+          <div className="verify-banner">
+            <AlertCircle size={20} />
+            <div>
+              <strong>Verification pending</strong>
+              <p>
+                An administrator is reviewing your medical license. Until it is approved your
+                profile will not appear in patient searches and you cannot receive bookings.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="profile-layout">
 
         {/* LEFT COLUMN: OVERVIEW CARD */}
@@ -184,15 +312,33 @@ const UserProfile = () => {
 
           <div className="profile-card main-profile-card">
             <div className="avatar-wrapper">
-              <div className="avatar-huge">
-                {userData.firstName[0]}{userData.lastName[0]}
-              </div>
-              {isEditing && (
-                <button className="avatar-edit-btn">
-                  <Camera size={16} />
-                </button>
+              {user?.avatar ? (
+                <img src={assetUrl(user.avatar)} alt="Profile" className="avatar-huge avatar-image" />
+              ) : (
+                <div className="avatar-huge">
+                  {userData.firstName[0]}{userData.lastName[0]}
+                </div>
               )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleAvatarChange}
+                style={{ display: 'none' }}
+              />
+              <button
+                className="avatar-edit-btn"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={avatarUploading}
+                title={user?.avatar ? 'Change photo' : 'Upload photo'}
+              >
+                {avatarUploading
+                  ? <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                  : <Camera size={16} />}
+              </button>
             </div>
+
+            {avatarError && <p className="avatar-error">{avatarError}</p>}
 
             <h2 className="profile-name">{userData.firstName} {userData.lastName}</h2>
             <p className="profile-id">{user?.role === 'doctor' ? 'Doctor' : 'Patient'} ID: {user?.id?.slice(-6).toUpperCase() || 'N/A'}</p>
@@ -444,7 +590,7 @@ const UserProfile = () => {
             <div className="profile-card">
               <h3>Account Settings</h3>
               <div className="settings-list">
-                <button className="setting-btn">
+                <button className="setting-btn" onClick={openPasswordModal}>
                   <div className="setting-info">
                     <Lock size={18} className="text-muted" />
                     <span>Change Password</span>
@@ -479,6 +625,95 @@ const UserProfile = () => {
 
         </main>
       </div>
+
+      {/* CHANGE PASSWORD MODAL */}
+      {showPasswordModal && (
+        <div className="pw-modal-overlay" onClick={() => !pwSaving && setShowPasswordModal(false)}>
+          <div className="pw-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2><KeyRound size={20} /> Change Password</h2>
+              <button
+                className="close-btn"
+                onClick={() => setShowPasswordModal(false)}
+                disabled={pwSaving}
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handlePasswordSubmit} className="pw-form">
+              {pwErrors.form && (
+                <div className="pw-form-error">
+                  <AlertCircle size={16} /> {pwErrors.form}
+                </div>
+              )}
+
+              <div className="input-group">
+                <label>Current Password</label>
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  name="currentPassword"
+                  value={pwForm.currentPassword}
+                  onChange={handlePwChange}
+                  autoComplete="current-password"
+                />
+                {pwErrors.currentPassword && <span className="pw-error">{pwErrors.currentPassword}</span>}
+              </div>
+
+              <div className="input-group">
+                <label>New Password</label>
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  name="newPassword"
+                  value={pwForm.newPassword}
+                  onChange={handlePwChange}
+                  autoComplete="new-password"
+                />
+                {pwErrors.newPassword && <span className="pw-error">{pwErrors.newPassword}</span>}
+              </div>
+
+              <div className="input-group">
+                <label>Confirm New Password</label>
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  name="confirmPassword"
+                  value={pwForm.confirmPassword}
+                  onChange={handlePwChange}
+                  autoComplete="new-password"
+                />
+                {pwErrors.confirmPassword && <span className="pw-error">{pwErrors.confirmPassword}</span>}
+              </div>
+
+              <button type="button" className="pw-toggle" onClick={() => setShowPw((v) => !v)}>
+                {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
+                {showPw ? 'Hide passwords' : 'Show passwords'}
+              </button>
+
+              <p className="pw-hint">
+                Must be at least 8 characters with an uppercase letter, a lowercase letter,
+                a number, and a special character.
+              </p>
+
+              <div className="pw-actions">
+                <button
+                  type="button"
+                  className="btn-outline"
+                  onClick={() => setShowPasswordModal(false)}
+                  disabled={pwSaving}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary" disabled={pwSaving}>
+                  {pwSaving
+                    ? <><Loader size={16} style={{ animation: 'spin 1s linear infinite' }} /> Updating…</>
+                    : <><Save size={16} /> Update Password</>}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
