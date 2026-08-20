@@ -46,18 +46,19 @@
 | UserProfile | `/profile` | `PUT /patients/profile`, `PUT /doctors/profile` | ⚠️ falsy values silently dropped; no avatar upload |
 | NotFound | `*` | — | — |
 
-### 1.3 Defects found during the audit (fixed in Phase 0)
+### 1.3 Defects found during the audit
 
-1. **`GET /api/ai/diseases` omits `description`** — `aiController.js:97` selects `name slug category severity specialistType symptoms`. `DiseaseListing.js` calls `disease.description?.substring(0,100)` → renders `undefined...`.
-2. **Disease category enum mismatch** — the frontend filters on `Endocrine, Musculoskeletal, Hematological, Urological`; `Disease.js` has `Chronic, Digestive, Skin, Autoimmune, Other`. Those filter chips can never return results.
-3. **`specialistType` values are unroutable** — diseases reference `Endocrinologist` / `Pulmonologist`, which are not in the `Doctor.specialization` enum, so "find a specialist" can never match a doctor.
-4. **`GET /api/patients/:id` is wrong** — `patientRoutes.js:19` maps it to `getPatientProfile`, which looks up `Patient.findOne({ user: req.user._id })` and ignores `:id`. A doctor hitting it gets a 404 for their own missing patient profile.
-5. **`PUT /api/appointments/:id` has no ownership check** — `appointmentController.js:146`; any authenticated doctor can rewrite any appointment's status/prescription.
-6. **Uploaded reports are world-readable** — `app.use('/uploads', express.static(...))` serves PHI with no auth; anyone with the path reads another patient's report.
-7. **Truthy-guard updates drop legitimate values** — `updateDoctorProfile` / `updatePatientProfile` use `if (value)`, so `consultationFee: 0`, `experience: 0`, or clearing `bio` are silently ignored.
-8. **Doctors self-verify** — `register()` hardcodes `isVerified: true`; the medical license is never checked.
-9. **Admin registration is a no-op** — `hospitalId` is destructured then thrown away; no Admin model exists, yet Signup offers an admin tab.
-10. **`.env` is missing keys** read by `config/env.js`: `NODE_ENV`, `JWT_EXPIRE`, `CLIENT_URL`. A missing `JWT_SECRET` silently falls back to `fallback_secret_key`.
+1. ✅ **`GET /api/ai/diseases` omits `description`** — `aiController.js:97` selected `name slug category severity specialistType symptoms`. `DiseaseListing.js` calls `disease.description?.substring(0,100)` → rendered `undefined...`.
+2. ✅ **Seeded diseases had no slug at all** — `seeder.js` uses `Disease.insertMany()`, which bypasses the `pre('save')` slug hook entirely. Every seeded disease landed with `slug: undefined`, so `/diseases/:slug` could never resolve and the unique slug index would reject the second insert.
+3. ✅ **Disease category enum mismatch** — the frontend filters on `Endocrine, Musculoskeletal, Hematological, Urological`; `Disease.js` had none of them. Those filter chips could never return results.
+4. ✅ **`specialistType` values are unroutable** — diseases reference `Endocrinologist` / `Pulmonologist`, which were not in the `Doctor.specialization` enum, so "find a specialist" could never match a doctor.
+5. ✅ **`GET /api/patients/:id` had no access control** — the handler does honour `:id` (an earlier draft of this plan said otherwise), but any doctor could read any patient's full medical profile, treating them or not.
+6. ✅ **`PUT /api/appointments/:id` has no ownership check** — `appointmentController.js:146`; any authenticated doctor could rewrite any appointment's status/prescription.
+7. ✅ **Uploaded reports are world-readable** — `app.use('/uploads', express.static(...))` served PHI with no auth; anyone with the path could read another patient's report. `GET /api/reports/:id` also let *any* doctor read *any* report.
+8. ✅ **Truthy-guard updates drop legitimate values** — `updateDoctorProfile` / `updatePatientProfile` used `if (value)`, so `consultationFee: 0`, `experience: 0`, or clearing `bio` were silently ignored.
+9. ⬜ **Doctors self-verify** — `register()` hardcodes `isVerified: true`; the medical license is never checked. *(Phase 1)*
+10. ⬜ **Admin registration is a no-op** — `hospitalId` is destructured then thrown away; no Admin model exists, yet Signup offers an admin tab. *(Phase 1)*
+11. ✅ **`.env` was missing keys** read by `config/env.js`: `NODE_ENV`, `JWT_EXPIRE`, `CLIENT_URL`. A missing `JWT_SECRET` silently fell back to `fallback_secret_key`.
 
 ### 1.4 Conventions to keep
 
@@ -68,30 +69,34 @@
 
 ---
 
-## Phase 0 — Stabilise the existing API
+## Phase 0 — Stabilise the existing API ✅ COMPLETE
 
 **Goal:** everything already wired to the frontend works correctly and safely before new modules land.
 **Unblocks:** DiseaseListing, UserProfile saves, all report pages.
 
 ### Tasks
 
-1. **`src/controllers/aiController.js`** — add `description` (and `causes`, for search) to the `.select()` in `getAllDiseases`.
-2. **`src/models/Disease.js`** — extend the `category` enum to the union the UI uses: `Infectious, Chronic, Respiratory, Cardiovascular, Neurological, Digestive, Skin, Autoimmune, Mental Health, Endocrine, Musculoskeletal, Hematological, Urological, Other`. Also make the slug hook run on `isNew`, not only `isModified('name')`, so `insertMany` seeds get slugs.
-3. **`src/models/Doctor.js`** — extend `specialization` with `Endocrinologist, Pulmonologist, Nephrologist, Gastroenterologist, Rheumatologist, Hematologist` so `specialistType` → doctor lookup resolves.
-4. **`src/routes/patientRoutes.js` + `patientController.js`** — split into `getPatientProfile` (self) and a new `getPatientById` (doctor/admin, honours `req.params.id`).
-5. **`src/controllers/appointmentController.js`** — in `updateAppointment`, reject unless `appointment.doctor.equals(req.user._id)` or the role is `admin` (403).
-6. **Protect uploads** — remove the static `/uploads` mount; add `GET /api/reports/:id/file` (`protect` + owner / treating-doctor / admin check) that `res.sendFile`s the stored path.
-7. **Profile updates** — replace `if (x)` with `if (x !== undefined)` in `updateDoctorProfile` and `updatePatientProfile`; coerce numbers; ignore the `null` the profile form sends for cleared numeric fields.
-8. **`.env` / `config/env.js`** — add `NODE_ENV`, `JWT_EXPIRE=7d`, `CLIENT_URL=http://localhost:3000`; exit on boot if `JWT_SECRET` or `MONGO_URI` is unset in production rather than falling back.
-9. **Seeder** — reseed diseases with the exact 12 slugs the frontend fallback uses (`diabetes, hypertension, asthma, migraine, arthritis, covid-19, depression, anemia, pneumonia, alzheimers, kidney-stones, thyroid-disorder`) so DB data cleanly replaces the fallback.
+1. ✅ **`src/controllers/aiController.js`** — `getAllDiseases` now selects `description`, searches name **and** description, and treats `category=All` as no filter.
+2. ✅ **`src/models/Disease.js`** — `category` enum extended to the union the UI uses. The slug hook now honours an explicitly supplied slug, and a new `pre('insertMany')` hook fills slugs for seeded documents.
+3. ✅ **`src/utils/slugify.js`** (new) — shared slug helper; drops apostrophes rather than turning them into gaps (`Alzheimer's Disease` → `alzheimers-disease`).
+4. ✅ **`src/models/Doctor.js`** — `specialization` extended with `Endocrinologist, Pulmonologist, Nephrologist, Gastroenterologist, Rheumatologist, Hematologist`.
+5. ✅ **`patientController.js` / `patientRoutes.js`** — split into `getPatientProfile` (self) and `getPatientById`; a doctor may only read a patient they share an appointment with (403 otherwise), admins may read anyone.
+6. ✅ **`appointmentController.js`** — `updateAppointment` rejects anyone who is not the appointment's doctor or an admin (403).
+7. ✅ **Protect uploads** — static `/uploads` mount removed; `GET /api/reports/:id/file` streams the file behind an owner / treating-doctor / admin check, with a path-traversal guard. `getReportById` uses the same check, so a non-treating doctor no longer reads arbitrary reports. `Report.filePath` is stripped from JSON and replaced by a `fileUrl` virtual.
+8. ✅ **Profile updates** — `undefined` checks instead of truthiness in both profile controllers; numbers coerced; `null` from a cleared numeric input leaves `consultationFee` intact (it feeds the required `Appointment.consultationFee`).
+9. ✅ **`.env` / `config/env.js`** — `NODE_ENV`, `JWT_EXPIRE`, `CLIENT_URL` added; the server exits in production when `MONGO_URI` or `JWT_SECRET` is missing and warns in development. `.env.example` added.
+10. ✅ **Seed data** — diseases moved to `src/utils/seedData/diseases.js`: 15 conditions with pinned slugs, covering all 12 the frontend links to plus 3 extras for the symptom checker.
 
-### Acceptance criteria
+### Verification (run 2026-08-20)
 
-- `GET /api/ai/diseases` returns `description`; all 10 DiseaseListing category chips return results.
-- A doctor can `GET /api/patients/<patientId>` and receive that patient's profile.
-- A doctor not on an appointment gets 403 from `PUT /api/appointments/:id`.
-- `GET /uploads/<file>` 404s; `GET /api/reports/:id/file` returns the PDF only to the owner.
-- Saving a profile with `consultationFee = 0` persists `0`.
+- 15/15 seed diseases validate against the schema; all 12 frontend slugs present; all 9 category chips return data; every `specialistType` resolves to a real `Doctor.specialization`.
+- `insertMany` now produces 15/15 slugs (previously 0).
+- `GET /api/health` 200 · `GET /uploads/<file>` 404 · `GET /api/reports/:id/file` 401 unauthenticated · `GET /api/patients/:id` 401 unauthenticated.
+- Query checks ran against a throwaway database, which was cleaned up afterwards; the live database was only read.
+
+### Outstanding
+
+- **The database has no diseases and no doctors** (1 patient, 1 report, 0 doctors, 0 diseases). Nothing renders from the catalog until `npm run seed` runs — note that the seeder wipes `users`, `patients`, and `doctors` first, which would delete the existing test patient (and orphan their report, since `reports` is not cleared). Seeder v2 in Phase 9 makes this idempotent.
 
 ---
 

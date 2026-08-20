@@ -68,4 +68,21 @@ const reportSchema = new mongoose.Schema(
 
 reportSchema.index({ patient: 1, uploadDate: -1 });
 
+// Clients get an API URL to fetch the file through, never the server's own
+// absolute path — see GET /api/reports/:id/file.
+reportSchema.virtual('fileUrl').get(function () {
+  return `/api/reports/${this._id}/file`;
+});
+
+// Only the JSON form is stripped — internal code (and getReportFile) still
+// reads doc.filePath normally.
+reportSchema.set('toJSON', {
+  virtuals: true,
+  transform: (doc, ret) => {
+    delete ret.filePath;
+    return ret;
+  },
+});
+reportSchema.set('toObject', { virtuals: true });
+
 module.exports = mongoose.model('Report', reportSchema);
