@@ -10,6 +10,7 @@ const User = require('../models/User');
 const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
 const Disease = require('../models/Disease');
+const diseases = require('./seedData/diseases');
 
 const seedData = async () => {
   try {
@@ -127,108 +128,8 @@ const seedData = async () => {
     // 2. SEED DISEASES
     // ══════════════════════════════════════
 
-    const diseases = [
-      {
-        name: 'Influenza',
-        description: 'A contagious respiratory illness caused by influenza viruses. It can cause mild to severe illness and sometimes lead to death.',
-        category: 'Respiratory',
-        symptoms: ['fever', 'cough', 'sore throat', 'runny nose', 'body aches', 'headache', 'fatigue', 'chills'],
-        causes: ['Influenza virus (Type A, B, C)', 'Airborne droplets from infected person'],
-        riskFactors: ['Weak immune system', 'Age (children & elderly)', 'Chronic illness', 'Pregnancy'],
-        treatments: [
-          { name: 'Oseltamivir (Tamiflu)', description: 'Antiviral medication', type: 'medication' },
-          { name: 'Rest & Hydration', description: 'Bed rest and plenty of fluids', type: 'lifestyle' },
-        ],
-        preventions: ['Annual flu vaccination', 'Frequent handwashing', 'Avoid close contact with sick people'],
-        relatedMedicines: ['Paracetamol', 'Oseltamivir', 'Ibuprofen'],
-        severity: 'moderate',
-        specialistType: 'General Physician',
-      },
-      {
-        name: 'Hypertension',
-        description: 'A chronic medical condition in which blood pressure in the arteries is persistently elevated, increasing the risk of heart disease and stroke.',
-        category: 'Cardiovascular',
-        symptoms: ['headache', 'shortness of breath', 'nosebleed', 'dizziness', 'chest pain', 'blurred vision'],
-        causes: ['Genetics', 'High salt diet', 'Obesity', 'Lack of exercise', 'Stress'],
-        riskFactors: ['Family history', 'Age above 40', 'Obesity', 'Smoking', 'Excessive alcohol'],
-        treatments: [
-          { name: 'ACE Inhibitors', description: 'Medication to relax blood vessels', type: 'medication' },
-          { name: 'Lifestyle Changes', description: 'Diet, exercise, stress management', type: 'lifestyle' },
-        ],
-        preventions: ['Reduce salt intake', 'Regular exercise', 'Maintain healthy weight', 'Limit alcohol'],
-        relatedMedicines: ['Amlodipine', 'Losartan', 'Metoprolol'],
-        severity: 'severe',
-        specialistType: 'Cardiologist',
-      },
-      {
-        name: 'Type 2 Diabetes',
-        description: 'A chronic condition that affects the way the body processes blood sugar (glucose). With type 2 diabetes, the body either resists the effects of insulin or does not produce enough.',
-        category: 'Chronic',
-        symptoms: ['increased thirst', 'frequent urination', 'unexplained weight loss', 'fatigue', 'blurred vision', 'slow healing wounds', 'tingling in hands or feet'],
-        causes: ['Insulin resistance', 'Genetics', 'Obesity', 'Sedentary lifestyle'],
-        riskFactors: ['Obesity', 'Family history', 'Age above 45', 'Physical inactivity', 'PCOS'],
-        treatments: [
-          { name: 'Metformin', description: 'Oral medication to control blood sugar', type: 'medication' },
-          { name: 'Insulin Therapy', description: 'For advanced cases', type: 'medication' },
-          { name: 'Diet Control', description: 'Low-carb, balanced meals', type: 'lifestyle' },
-        ],
-        preventions: ['Healthy diet', 'Regular exercise', 'Maintain healthy weight', 'Regular blood sugar checks'],
-        relatedMedicines: ['Metformin', 'Glimepiride', 'Insulin'],
-        severity: 'severe',
-        specialistType: 'General Physician',
-      },
-      {
-        name: 'Migraine',
-        description: 'A neurological condition characterized by intense, debilitating headaches often accompanied by nausea, vomiting, and sensitivity to light and sound.',
-        category: 'Neurological',
-        symptoms: ['severe headache', 'nausea', 'vomiting', 'sensitivity to light', 'sensitivity to sound', 'aura', 'dizziness', 'blurred vision'],
-        causes: ['Neurological changes', 'Hormonal changes', 'Stress', 'Certain foods', 'Weather changes'],
-        riskFactors: ['Family history', 'Female gender', 'Hormonal changes', 'Stress', 'Sleep disturbances'],
-        treatments: [
-          { name: 'Sumatriptan', description: 'Triptan medication for acute attacks', type: 'medication' },
-          { name: 'Preventive medication', description: 'Beta blockers or anti-seizure drugs', type: 'medication' },
-        ],
-        preventions: ['Identify and avoid triggers', 'Regular sleep schedule', 'Stress management', 'Stay hydrated'],
-        relatedMedicines: ['Sumatriptan', 'Ibuprofen', 'Propranolol'],
-        severity: 'moderate',
-        specialistType: 'Neurologist',
-      },
-      {
-        name: 'Common Cold',
-        description: 'A viral infectious disease of the upper respiratory tract. It is the most frequent infectious disease in humans.',
-        category: 'Respiratory',
-        symptoms: ['runny nose', 'sneezing', 'sore throat', 'cough', 'mild fever', 'headache', 'body aches'],
-        causes: ['Rhinovirus', 'Coronavirus', 'Contact with infected person'],
-        riskFactors: ['Weak immunity', 'Cold weather exposure', 'Children in daycare', 'Smoking'],
-        treatments: [
-          { name: 'Rest & Fluids', description: 'Rest with warm fluids', type: 'lifestyle' },
-          { name: 'OTC Decongestants', description: 'Nasal decongestant sprays or tablets', type: 'medication' },
-        ],
-        preventions: ['Wash hands frequently', 'Avoid close contact with sick people', 'Boost immunity with vitamin C'],
-        relatedMedicines: ['Paracetamol', 'Cetirizine', 'Vitamin C'],
-        severity: 'mild',
-        specialistType: 'General Physician',
-      },
-      {
-        name: 'Eczema',
-        description: 'A chronic skin condition characterized by itchy, inflamed, and red patches on the skin. Also known as atopic dermatitis.',
-        category: 'Skin',
-        symptoms: ['itchy skin', 'red patches', 'dry skin', 'cracked skin', 'swelling', 'skin rash'],
-        causes: ['Immune system dysfunction', 'Genetics', 'Environmental triggers', 'Allergens'],
-        riskFactors: ['Family history of eczema or allergies', 'Asthma', 'Hay fever', 'Dry climate'],
-        treatments: [
-          { name: 'Topical Corticosteroids', description: 'Anti-inflammatory creams', type: 'medication' },
-          { name: 'Moisturizers', description: 'Regular use of emollients', type: 'lifestyle' },
-        ],
-        preventions: ['Regular moisturizing', 'Avoid known triggers', 'Use mild soaps', 'Wear soft fabrics'],
-        relatedMedicines: ['Hydrocortisone cream', 'Cetirizine', 'Moisturizing lotion'],
-        severity: 'moderate',
-        specialistType: 'Dermatologist',
-      },
-    ];
-
     await Disease.insertMany(diseases);
-    console.log('🦠 6 Diseases seeded');
+    console.log(`🦠 ${diseases.length} Diseases seeded`);
 
     // ══════════════════════════════════════
     console.log('\n✅ Database seeding completed successfully!');
