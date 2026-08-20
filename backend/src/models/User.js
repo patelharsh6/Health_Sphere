@@ -1,5 +1,10 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+
+// Reset links are single-use and short-lived; only the hash is ever stored, so
+// a database leak cannot be replayed against /auth/reset-password/:token.
+const RESET_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 const userSchema = new mongoose.Schema(
   {
@@ -47,6 +52,18 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    passwordChangedAt: {
+      type: Date,
+      select: false,
+    },
+    resetPasswordToken: {
+      type: String,
+      select: false,
+    },
+    resetPasswordExpire: {
+      type: Date,
+      select: false,
+    },
   },
   {
     timestamps: true,
@@ -61,9 +78,44 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
+// Record when the password changed, so tokens issued earlier can be rejected.
+userSchema.pre('save', function (next) {
+  if (this.isModified('password') && !this.isNew) {
+    // Backdate a second: the JWT is often signed in the same tick as the save,
+    // which would otherwise make the fresh token look older than the change.
+    this.passwordChangedAt = new Date(Date.now() - 1000);
+  }
+  next();
+});
+
 // Compare entered password with hashed password
 userSchema.methods.comparePassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-module.exports = mongoose.model('User', userSchema);
+/**
+ * Issues a reset token: the raw value goes to the user (email/response), only
+ * its SHA-256 hash is persisted. Caller must save() afterwards.
+ * @returns {string} the raw token to put in the reset URL
+ */
+userSchema.methods.createPasswordResetToken = function () {
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  this.resetPasswordToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+  this.resetPasswordExpire = new Date(Date.now() + RESET_TOKEN_TTL_MS);
+  return rawToken;
+};
+
+userSchema.statics.hashResetToken = function (rawToken) {
+  return crypto.createHash('sha256').update(rawToken).digest('hex');
+};
+
+/** True when the password changed after the given JWT was issued. */
+userSchema.methods.passwordChangedAfter = function (jwtIssuedAtSeconds) {
+  if (!this.passwordChangedAt || !jwtIssuedAtSeconds) return false;
+  return Math.floor(this.passwordChangedAt.getTime() / 1000) > jwtIssuedAtSeconds;
+};
+
+const User = mongoose.model('User', userSchema);
+User.RESET_TOKEN_TTL_MS = RESET_TOKEN_TTL_MS;
+
+module.exports = User;

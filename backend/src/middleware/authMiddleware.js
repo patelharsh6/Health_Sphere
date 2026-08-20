@@ -24,11 +24,20 @@ const protect = async (req, res, next) => {
     const decoded = verifyToken(token);
 
     // Attach user to request (exclude password)
-    const user = await User.findById(decoded.id);
+    const user = await User.findById(decoded.id).select('+passwordChangedAt');
     if (!user) {
       return res.status(401).json({
         success: false,
         message: 'User no longer exists.',
+      });
+    }
+
+    // A password change invalidates every token issued before it, so a stolen
+    // token stops working the moment the owner resets their password.
+    if (user.passwordChangedAfter(decoded.iat)) {
+      return res.status(401).json({
+        success: false,
+        message: 'Password was changed recently. Please log in again.',
       });
     }
 
