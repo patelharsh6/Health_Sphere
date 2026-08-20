@@ -8,6 +8,9 @@ const {
 } = require('../controllers/patientController');
 const { protect } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
+const { validate } = require('../middleware/validate');
+const { updatePatientProfileValidator } = require('../validators/profileValidators');
+const { param } = require('express-validator');
 
 // All routes require authentication
 router.use(protect);
@@ -19,9 +22,21 @@ router.get('/dashboard', authorize('patient'), getDashboard);
 router.get('/profile', authorize('patient'), getPatientProfile);
 
 // PUT /api/patients/profile
-router.put('/profile', authorize('patient'), updatePatientProfile);
+router.put(
+  '/profile',
+  authorize('patient'),
+  updatePatientProfileValidator,
+  validate,
+  updatePatientProfile
+);
 
 // GET /api/patients/:id (doctor/admin can view a patient they treat)
-router.get('/:id', authorize('doctor', 'admin'), getPatientById);
+router.get(
+  '/:id',
+  authorize('doctor', 'admin'),
+  param('id').isMongoId().withMessage('Invalid patient id.'),
+  validate,
+  getPatientById
+);
 
 module.exports = router;
