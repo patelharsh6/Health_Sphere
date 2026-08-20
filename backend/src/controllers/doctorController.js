@@ -94,22 +94,32 @@ const updateDoctorProfile = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Doctor profile not found.' });
     }
 
+    // 0 is a legitimate value for the numeric fields, so test against
+    // undefined rather than falsiness. The profile form sends null for a
+    // cleared number — leave the stored value alone in that case, since
+    // consultationFee feeds Appointment.consultationFee (a required field).
+    const hasNumber = (value) => value !== undefined && value !== null && value !== '';
+
     if (specialization) doctor.specialization = specialization;
-    if (experience) doctor.experience = experience;
+    if (hasNumber(experience)) doctor.experience = Number(experience);
     if (hospital) doctor.hospital = hospital;
-    if (consultationFee) doctor.consultationFee = consultationFee;
-    if (bio) doctor.bio = bio;
-    if (availableSlots) doctor.availableSlots = availableSlots;
+    if (hasNumber(consultationFee)) doctor.consultationFee = Number(consultationFee);
+    if (bio !== undefined) doctor.bio = bio;
+    if (availableSlots !== undefined) doctor.availableSlots = availableSlots;
 
     await doctor.save();
 
     // Update user basic info if provided
     const { fullName, phone } = req.body;
     if (fullName || phone) {
-      await User.findByIdAndUpdate(req.user._id, {
-        ...(fullName && { fullName }),
-        ...(phone && { phone }),
-      });
+      await User.findByIdAndUpdate(
+        req.user._id,
+        {
+          ...(fullName && { fullName }),
+          ...(phone && { phone }),
+        },
+        { runValidators: true }
+      );
     }
 
     res.status(200).json({

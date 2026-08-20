@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
-const path = require('path');
 const { CLIENT_URL, NODE_ENV } = require('./config/env');
 
 // Import Routes
@@ -35,8 +34,9 @@ if (NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Serve uploaded files statically
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// NOTE: uploads are deliberately NOT served statically — they contain medical
+// reports (PHI). Files are streamed through GET /api/reports/:id/file, which
+// enforces ownership. Avatars, once added, get their own public mount.
 
 // ──────────────────────────────────────────────
 // API ROUTES

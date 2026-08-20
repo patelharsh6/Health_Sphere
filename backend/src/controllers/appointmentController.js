@@ -154,9 +154,20 @@ const updateAppointment = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Appointment not found.' });
     }
 
+    // Only the doctor on this appointment (or an admin) may update it
+    if (
+      req.user.role !== 'admin' &&
+      appointment.doctor.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this appointment.',
+      });
+    }
+
     if (status) appointment.status = status;
-    if (prescription) appointment.prescription = prescription;
-    if (notes) appointment.notes = notes;
+    if (prescription !== undefined) appointment.prescription = prescription;
+    if (notes !== undefined) appointment.notes = notes;
 
     await appointment.save();
 
