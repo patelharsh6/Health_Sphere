@@ -9,6 +9,7 @@ const connectDB = require('../config/db');
 const User = require('../models/User');
 const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
+const Admin = require('../models/Admin');
 const Disease = require('../models/Disease');
 const diseases = require('./seedData/diseases');
 
@@ -21,6 +22,7 @@ const seedData = async () => {
     await User.deleteMany({});
     await Patient.deleteMany({});
     await Doctor.deleteMany({});
+    await Admin.deleteMany({});
     await Disease.deleteMany({});
     console.log('🗑️  Cleared existing data.');
 
@@ -37,6 +39,11 @@ const seedData = async () => {
       role: 'admin',
       termsAccepted: true,
       aiDisclaimerAccepted: true,
+    });
+    await Admin.create({
+      user: admin._id,
+      hospitalId: 'HOSP-001',
+      permissions: ['manage_users', 'verify_doctors', 'manage_content', 'view_reports', 'manage_appointments'],
     });
     console.log('👑 Admin created: admin@healthsphere.com / Admin@1234');
 

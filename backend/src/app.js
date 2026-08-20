@@ -1,6 +1,8 @@
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const multer = require('multer');
 const { CLIENT_URL, NODE_ENV } = require('./config/env');
 
 // Import Routes
@@ -36,7 +38,19 @@ if (NODE_ENV === 'development') {
 
 // NOTE: uploads are deliberately NOT served statically — they contain medical
 // reports (PHI). Files are streamed through GET /api/reports/:id/file, which
-// enforces ownership. Avatars, once added, get their own public mount.
+// enforces ownership.
+//
+// Avatars are the one exception: they are user-chosen profile pictures, not
+// medical data, so they get their own public mount scoped to uploads/avatars
+// only. Nothing else under uploads/ is reachable through it.
+app.use(
+  '/uploads/avatars',
+  express.static(path.resolve(__dirname, '../uploads/avatars'), {
+    fallthrough: true,
+    index: false,
+    dotfiles: 'deny',
+  })
+);
 
 // ──────────────────────────────────────────────
 // API ROUTES
@@ -76,15 +90,24 @@ app.use((req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error('🔥 Unhandled Error:', err);
-
-  // Multer file size error
-  if (err.code === 'LIMIT_FILE_SIZE') {
-    return res.status(400).json({
-      success: false,
-      message: 'File too large. Maximum size is 10MB.',
-    });
+  // Upload problems are client errors — the limit depends on which endpoint
+  // configured multer (10 MB for reports, 2 MB for avatars), so report the
+  // limit multer itself was given instead of hardcoding one.
+  if (err instanceof multer.MulterError) {
+    const limitMb = req.originalUrl.includes('/avatar') ? 2 : 10;
+    const message =
+      err.code === 'LIMIT_FILE_SIZE'
+        ? `File too large. Maximum size is ${limitMb}MB.`
+        : `Upload failed: ${err.message}.`;
+    return res.status(400).json({ success: false, message });
   }
+
+  // fileFilter rejections arrive as plain Errors carrying a user-facing message
+  if (/^Only PDF|^Avatar must be/.test(err.message || '')) {
+    return res.status(400).json({ success: false, message: err.message });
+  }
+
+  console.error('🔥 Unhandled Error:', err);
 
   res.status(err.status || 500).json({
     success: false,
