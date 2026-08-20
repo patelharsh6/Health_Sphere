@@ -98,14 +98,18 @@ const getAllDiseases = async (req, res) => {
     const { category, search } = req.query;
     const filter = {};
 
-    if (category) filter.category = category;
+    if (category && category !== 'All') filter.category = category;
 
+    // DiseaseListing searches names and descriptions, so match both
     if (search) {
-      filter.name = { $regex: search, $options: 'i' };
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+      ];
     }
 
     const diseases = await Disease.find(filter)
-      .select('name slug category severity specialistType symptoms')
+      .select('name slug description category severity specialistType symptoms')
       .sort({ name: 1 });
 
     res.status(200).json({

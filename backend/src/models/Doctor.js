@@ -29,6 +29,13 @@ const doctorSchema = new mongoose.Schema(
         'Gynecologist',
         'Urologist',
         'Oncologist',
+        // Added so Disease.specialistType values always resolve to a real doctor
+        'Endocrinologist',
+        'Pulmonologist',
+        'Nephrologist',
+        'Gastroenterologist',
+        'Rheumatologist',
+        'Hematologist',
         'Other',
       ],
     },
