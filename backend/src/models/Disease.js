@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { slugify } = require('../utils/slugify');
 
 const diseaseSchema = new mongoose.Schema(
   {
@@ -19,12 +20,17 @@ const diseaseSchema = new mongoose.Schema(
     },
     category: {
       type: String,
+      // Must cover every chip rendered by frontend/src/pages/DiseaseListing.js
       enum: [
         'Infectious',
         'Chronic',
         'Respiratory',
         'Cardiovascular',
         'Neurological',
+        'Endocrine',
+        'Musculoskeletal',
+        'Hematological',
+        'Urological',
         'Digestive',
         'Skin',
         'Autoimmune',
@@ -63,10 +69,22 @@ const diseaseSchema = new mongoose.Schema(
   }
 );
 
-// Auto-generate slug from name
+// Auto-generate slug from name — an explicitly supplied slug always wins,
+// so seed data can pin the slugs the frontend links to.
 diseaseSchema.pre('save', function (next) {
-  if (this.isModified('name')) {
-    this.slug = this.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+  if (!this.slug || (this.isModified('name') && !this.isModified('slug'))) {
+    this.slug = slugify(this.name);
+  }
+  next();
+});
+
+// insertMany() bypasses 'save' hooks entirely, which previously left every
+// seeded disease without a slug (making /diseases/:slug unresolvable).
+diseaseSchema.pre('insertMany', function (next, docs) {
+  if (Array.isArray(docs)) {
+    docs.forEach((doc) => {
+      if (!doc.slug && doc.name) doc.slug = slugify(doc.name);
+    });
   }
   next();
 });
