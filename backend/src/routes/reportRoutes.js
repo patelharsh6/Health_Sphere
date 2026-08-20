@@ -5,6 +5,7 @@ const {
   uploadReport,
   getMyReports,
   getReportById,
+  getReportFile,
   reviewReport,
 } = require('../controllers/reportController');
 const { protect } = require('../middleware/authMiddleware');
@@ -18,6 +19,9 @@ router.post('/upload', authorize('patient'), upload.single('file'), uploadReport
 
 // GET /api/reports (patient gets their reports)
 router.get('/', authorize('patient'), getMyReports);
+
+// GET /api/reports/:id/file (auth-gated download — replaces static /uploads)
+router.get('/:id/file', getReportFile);
 
 // GET /api/reports/:id
 router.get('/:id', getReportById);

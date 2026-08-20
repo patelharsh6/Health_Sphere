@@ -2,11 +2,14 @@ const Report = require('../models/Report');
 const { parseReport } = require('../utils/reportParser');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+
+const UPLOADS_DIR = path.resolve(__dirname, '../../uploads');
 
 // Multer config for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../../uploads'));
+    cb(null, UPLOADS_DIR);
   },
   filename: (req, file, cb) => {
     const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
@@ -108,9 +111,30 @@ const getMyReports = async (req, res) => {
 };
 
 /**
+ * Decide whether a user may read a report.
+ * Owner and admin always may; a doctor only if they treat the patient.
+ * @param {Object} report - Report document (patient may be populated)
+ * @param {Object} user - req.user
+ * @returns {Promise<boolean>}
+ */
+const canAccessReport = async (report, user) => {
+  const patientId = report.patient._id ? report.patient._id.toString() : report.patient.toString();
+
+  if (patientId === user._id.toString()) return true;
+  if (user.role === 'admin') return true;
+
+  if (user.role === 'doctor') {
+    const Appointment = require('../models/Appointment');
+    return Boolean(await Appointment.exists({ doctor: user._id, patient: patientId }));
+  }
+
+  return false;
+};
+
+/**
  * @desc    Get single report with analysis
  * @route   GET /api/reports/:id
- * @access  Private
+ * @access  Private (owner / treating doctor / admin)
  */
 const getReportById = async (req, res) => {
   try {
@@ -122,18 +146,47 @@ const getReportById = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Report not found.' });
     }
 
-    // Access check
-    if (
-      report.patient._id.toString() !== req.user._id.toString() &&
-      req.user.role !== 'doctor' &&
-      req.user.role !== 'admin'
-    ) {
+    if (!(await canAccessReport(report, req.user))) {
       return res.status(403).json({ success: false, message: 'Not authorized.' });
     }
 
     res.status(200).json({ success: true, data: report });
   } catch (error) {
     console.error('GetReportById Error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * @desc    Stream the stored report file (replaces the old public /uploads mount)
+ * @route   GET /api/reports/:id/file
+ * @access  Private (owner / treating doctor / admin)
+ */
+const getReportFile = async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+
+    if (!report) {
+      return res.status(404).json({ success: false, message: 'Report not found.' });
+    }
+
+    if (!(await canAccessReport(report, req.user))) {
+      return res.status(403).json({ success: false, message: 'Not authorized.' });
+    }
+
+    // Keep the resolved path inside the uploads directory
+    const absolutePath = path.resolve(report.filePath);
+    if (!absolutePath.startsWith(UPLOADS_DIR)) {
+      return res.status(400).json({ success: false, message: 'Invalid file path.' });
+    }
+
+    if (!fs.existsSync(absolutePath)) {
+      return res.status(404).json({ success: false, message: 'File is no longer available.' });
+    }
+
+    res.sendFile(absolutePath);
+  } catch (error) {
+    console.error('GetReportFile Error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -171,4 +224,11 @@ const reviewReport = async (req, res) => {
   }
 };
 
-module.exports = { upload, uploadReport, getMyReports, getReportById, reviewReport };
+module.exports = {
+  upload,
+  uploadReport,
+  getMyReports,
+  getReportById,
+  getReportFile,
+  reviewReport,
+};
