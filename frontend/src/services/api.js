@@ -2,6 +2,19 @@ import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
+// Static files (avatars) are served from the server root, not under /api.
+export const ASSET_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '');
+
+/**
+ * Turns a server-relative upload path ("/uploads/avatars/x.png") into an
+ * absolute URL. Passes absolute URLs and empty values through untouched.
+ */
+export const assetUrl = (filePath) => {
+  if (!filePath) return '';
+  if (/^https?:\/\//.test(filePath)) return filePath;
+  return `${ASSET_BASE_URL}${filePath.startsWith('/') ? '' : '/'}${filePath}`;
+};
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -47,6 +60,19 @@ export const authAPI = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
   getMe: () => api.get('/auth/me'),
+  // The token is passed explicitly: logout clears local storage first, so the
+  // request interceptor would otherwise find nothing to attach and the call
+  // would come back 401 and trip the redirect interceptor.
+  logout: (token) =>
+    api.post('/auth/logout', null, token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+  // Returns a fresh token — the previous one is invalidated server-side.
+  changePassword: (data) => api.put('/auth/password', data),
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  resetPassword: (token, password) => api.post(`/auth/reset-password/${token}`, { password }),
+  uploadAvatar: (formData) =>
+    api.post('/auth/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
 };
 
 // ═══════════════════════════════════════
