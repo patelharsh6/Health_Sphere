@@ -1,6 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { getPatientProfile, updatePatientProfile, getDashboard } = require('../controllers/patientController');
+const {
+  getPatientProfile,
+  getPatientById,
+  updatePatientProfile,
+  getDashboard,
+} = require('../controllers/patientController');
 const { protect } = require('../middleware/authMiddleware');
 const { authorize } = require('../middleware/roleMiddleware');
 
@@ -16,7 +21,7 @@ router.get('/profile', authorize('patient'), getPatientProfile);
 // PUT /api/patients/profile
 router.put('/profile', authorize('patient'), updatePatientProfile);
 
-// GET /api/patients/:id (doctor/admin can view a patient)
-router.get('/:id', authorize('doctor', 'admin'), getPatientProfile);
+// GET /api/patients/:id (doctor/admin can view a patient they treat)
+router.get('/:id', authorize('doctor', 'admin'), getPatientById);
 
 module.exports = router;

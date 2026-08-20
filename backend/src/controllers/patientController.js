@@ -4,16 +4,16 @@ const Report = require('../models/Report');
 const { calculateRiskScore } = require('../utils/riskCalculator');
 
 /**
- * @desc    Get patient profile (own or by ID for doctor/admin)
+ * @desc    Get the logged-in patient's own profile
  * @route   GET /api/patients/profile
- * @route   GET /api/patients/:id
- * @access  Private
+ * @access  Private (Patient)
  */
 const getPatientProfile = async (req, res) => {
   try {
-    const userId = req.params.id || req.user._id;
-
-    const patient = await Patient.findOne({ user: userId }).populate('user', 'fullName email phone avatar');
+    const patient = await Patient.findOne({ user: req.user._id }).populate(
+      'user',
+      'fullName email phone avatar'
+    );
 
     if (!patient) {
       return res.status(404).json({ success: false, message: 'Patient profile not found.' });
@@ -22,6 +22,46 @@ const getPatientProfile = async (req, res) => {
     res.status(200).json({ success: true, data: patient });
   } catch (error) {
     console.error('GetPatientProfile Error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * @desc    Get another patient's profile — doctors may only read patients
+ *          they actually treat; admins may read anyone.
+ * @route   GET /api/patients/:id      (:id is the patient's User id)
+ * @access  Private (Doctor / Admin)
+ */
+const getPatientById = async (req, res) => {
+  try {
+    const patient = await Patient.findOne({ user: req.params.id }).populate(
+      'user',
+      'fullName email phone avatar'
+    );
+
+    if (!patient) {
+      return res.status(404).json({ success: false, message: 'Patient profile not found.' });
+    }
+
+    // A doctor is only entitled to a patient they share an appointment with
+    if (req.user.role === 'doctor') {
+      const Appointment = require('../models/Appointment');
+      const treats = await Appointment.exists({
+        doctor: req.user._id,
+        patient: patient.user._id,
+      });
+
+      if (!treats) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized to view this patient.',
+        });
+      }
+    }
+
+    res.status(200).json({ success: true, data: patient });
+  } catch (error) {
+    console.error('GetPatientById Error:', error);
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -43,25 +83,33 @@ const updatePatientProfile = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Patient profile not found.' });
     }
 
-    // Update fields if provided
-    if (dateOfBirth) patient.dateOfBirth = dateOfBirth;
-    if (gender) patient.gender = gender;
-    if (bloodGroup) patient.bloodGroup = bloodGroup;
-    if (height) patient.height = height;
-    if (weight) patient.weight = weight;
-    if (allergies) patient.allergies = allergies;
-    if (chronicConditions) patient.chronicConditions = chronicConditions;
-    if (emergencyContact) patient.emergencyContact = emergencyContact;
+    // Only skip a field when the client omitted it — an empty string or 0 is
+    // a deliberate value, not "unchanged".
+    const provided = (value) => value !== undefined;
+
+    if (dateOfBirth) patient.dateOfBirth = dateOfBirth; // required field, never clear it
+    if (gender) patient.gender = gender;                // enum with no empty member
+    if (provided(bloodGroup)) patient.bloodGroup = bloodGroup;
+    // The profile form sends null for a cleared numeric input
+    if (provided(height)) patient.height = height === null || height === '' ? null : Number(height);
+    if (provided(weight)) patient.weight = weight === null || weight === '' ? null : Number(weight);
+    if (provided(allergies)) patient.allergies = allergies;
+    if (provided(chronicConditions)) patient.chronicConditions = chronicConditions;
+    if (provided(emergencyContact)) patient.emergencyContact = emergencyContact;
 
     await patient.save();
 
     // Also update user basic info if provided
     const { fullName, phone } = req.body;
     if (fullName || phone) {
-      await User.findByIdAndUpdate(req.user._id, {
-        ...(fullName && { fullName }),
-        ...(phone && { phone }),
-      });
+      await User.findByIdAndUpdate(
+        req.user._id,
+        {
+          ...(fullName && { fullName }),
+          ...(phone && { phone }),
+        },
+        { runValidators: true }
+      );
     }
 
     res.status(200).json({
@@ -124,4 +172,9 @@ const getDashboard = async (req, res) => {
   }
 };
 
-module.exports = { getPatientProfile, updatePatientProfile, getDashboard };
+module.exports = {
+  getPatientProfile,
+  getPatientById,
+  updatePatientProfile,
+  getDashboard,
+};
