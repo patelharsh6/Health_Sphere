@@ -122,7 +122,18 @@ export const reportAPI = {
 export const aiAPI = {
   symptomCheck: (symptoms) => api.post('/ai/symptom-check', { symptoms }),
   getAllDiseases: (params) => api.get('/ai/diseases', { params }),
+  getDiseaseCategories: () => api.get('/ai/diseases/categories'),
   getDiseaseBySlug: (slug) => api.get(`/ai/diseases/${slug}`),
+  getDiseaseDoctors: (slug) => api.get(`/ai/diseases/${slug}/doctors`),
+};
+
+// ═══════════════════════════════════════
+// MEDICINE ENDPOINTS
+// ═══════════════════════════════════════
+export const medicineAPI = {
+  getAll: (params) => api.get('/medicines', { params }),
+  getBySlug: (slug) => api.get(`/medicines/${slug}`),
+  getCategories: () => api.get('/medicines/categories'),
 };
 
 export default api;

@@ -11,7 +11,9 @@ const Patient = require('../models/Patient');
 const Doctor = require('../models/Doctor');
 const Admin = require('../models/Admin');
 const Disease = require('../models/Disease');
+const Medicine = require('../models/Medicine');
 const diseases = require('./seedData/diseases');
+const medicines = require('./seedData/medicines');
 
 const seedData = async () => {
   try {
@@ -24,6 +26,7 @@ const seedData = async () => {
     await Doctor.deleteMany({});
     await Admin.deleteMany({});
     await Disease.deleteMany({});
+    await Medicine.deleteMany({});
     console.log('🗑️  Cleared existing data.');
 
     // ══════════════════════════════════════
@@ -137,6 +140,13 @@ const seedData = async () => {
 
     await Disease.insertMany(diseases);
     console.log(`🦠 ${diseases.length} Diseases seeded`);
+
+    // ══════════════════════════════════════
+    // 3. SEED MEDICINES
+    // ══════════════════════════════════════
+
+    await Medicine.insertMany(medicines);
+    console.log(`💊 ${medicines.length} Medicines seeded`);
 
     // ══════════════════════════════════════
     console.log('\n✅ Database seeding completed successfully!');

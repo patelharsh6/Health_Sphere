@@ -1,31 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search, Pill, AlertTriangle, ArrowRight,
-  ChevronRight, Shield, Clock, Activity, Filter
+  ChevronRight, Shield, Clock, Activity, Filter, Loader
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { medicineAPI } from '../services/api';
 import './MedicineListing.css';
-
-// Static medicine data
-const medicinesData = [
-  { _id: '1', name: 'Paracetamol', slug: 'paracetamol', category: 'Pain Relief', type: 'Tablet', description: 'Common pain reliever and fever reducer. Used for headaches, muscle aches, and colds.', uses: ['Fever', 'Headache', 'Pain'], prescriptionRequired: false },
-  { _id: '2', name: 'Amoxicillin', slug: 'amoxicillin', category: 'Antibiotic', type: 'Capsule', description: 'Penicillin-type antibiotic used to treat bacterial infections like ear, nose, and throat infections.', uses: ['Bacterial infections', 'Ear infections', 'UTI'], prescriptionRequired: true },
-  { _id: '3', name: 'Metformin', slug: 'metformin', category: 'Diabetes', type: 'Tablet', description: 'First-line medication for treating type 2 diabetes by controlling blood sugar levels.', uses: ['Type 2 Diabetes', 'PCOS', 'Blood sugar control'], prescriptionRequired: true },
-  { _id: '4', name: 'Omeprazole', slug: 'omeprazole', category: 'Gastrointestinal', type: 'Capsule', description: 'Proton pump inhibitor that reduces stomach acid production for acid reflux and ulcers.', uses: ['Acid reflux', 'GERD', 'Stomach ulcers'], prescriptionRequired: true },
-  { _id: '5', name: 'Cetirizine', slug: 'cetirizine', category: 'Allergy', type: 'Tablet', description: 'Antihistamine used for allergies, hay fever, and hives. Non-drowsy formula.', uses: ['Allergies', 'Hay fever', 'Hives'], prescriptionRequired: false },
-  { _id: '6', name: 'Amlodipine', slug: 'amlodipine', category: 'Cardiovascular', type: 'Tablet', description: 'Calcium channel blocker used for treating high blood pressure and chest pain.', uses: ['Hypertension', 'Chest pain', 'Angina'], prescriptionRequired: true },
-  { _id: '7', name: 'Ibuprofen', slug: 'ibuprofen', category: 'Pain Relief', type: 'Tablet', description: 'Nonsteroidal anti-inflammatory drug (NSAID) for pain relief and inflammation reduction.', uses: ['Pain relief', 'Inflammation', 'Arthritis'], prescriptionRequired: false },
-  { _id: '8', name: 'Azithromycin', slug: 'azithromycin', category: 'Antibiotic', type: 'Tablet', description: 'Macrolide antibiotic used for treating respiratory infections and sexually transmitted infections.', uses: ['Pneumonia', 'Bronchitis', 'Skin infections'], prescriptionRequired: true },
-  { _id: '9', name: 'Levothyroxine', slug: 'levothyroxine', category: 'Thyroid', type: 'Tablet', description: 'Synthetic thyroid hormone replacement for hypothyroidism treatment.', uses: ['Hypothyroidism', 'Goiter', 'Thyroid cancer'], prescriptionRequired: true },
-  { _id: '10', name: 'Vitamin D3', slug: 'vitamin-d3', category: 'Supplement', type: 'Softgel', description: 'Essential vitamin supplement for bone health and immune function support.', uses: ['Bone health', 'Vitamin D deficiency', 'Immune support'], prescriptionRequired: false },
-  { _id: '11', name: 'Atorvastatin', slug: 'atorvastatin', category: 'Cardiovascular', type: 'Tablet', description: 'Statin medication for lowering high cholesterol and reducing cardiovascular risk.', uses: ['High cholesterol', 'Heart disease prevention'], prescriptionRequired: true },
-  { _id: '12', name: 'Montelukast', slug: 'montelukast', category: 'Respiratory', type: 'Tablet', description: 'Leukotriene receptor antagonist for treating asthma and seasonal allergies.', uses: ['Asthma prevention', 'Allergic rhinitis'], prescriptionRequired: true },
-];
-
-const categories = [
-  'All', 'Pain Relief', 'Antibiotic', 'Diabetes', 'Cardiovascular',
-  'Gastrointestinal', 'Allergy', 'Thyroid', 'Respiratory', 'Supplement'
-];
 
 const getCategoryColor = (cat) => {
   const map = {
@@ -44,18 +24,57 @@ const getCategoryColor = (cat) => {
 
 const MedicineListing = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [showPrescription, setShowPrescription] = useState('all'); // all | otc | prescription
+  
+  const [medicines, setMedicines] = useState([]);
+  const [categories, setCategories] = useState(['All']);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const filteredMedicines = medicinesData.filter(m => {
-    const matchSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchCategory = activeCategory === 'All' || m.category === activeCategory;
-    const matchType = showPrescription === 'all' ||
-      (showPrescription === 'otc' && !m.prescriptionRequired) ||
-      (showPrescription === 'prescription' && m.prescriptionRequired);
-    return matchSearch && matchCategory && matchType;
-  });
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await medicineAPI.getCategories();
+        if (res.data.success) {
+          setCategories(['All', ...res.data.data]);
+        }
+      } catch (err) {
+        console.error('Error fetching categories', err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    const fetchMedicines = async () => {
+      setLoading(true);
+      try {
+        const res = await medicineAPI.getAll({
+          search: debouncedSearch || undefined,
+          category: activeCategory,
+          prescriptionRequired: showPrescription,
+          limit: 50 // Fetch enough for the listing
+        });
+        if (res.data.success) {
+          setMedicines(res.data.data);
+        }
+      } catch (err) {
+        setError('Failed to fetch medicines.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMedicines();
+  }, [debouncedSearch, activeCategory, showPrescription]);
 
   return (
     <div className="medicine-listing-page">
@@ -134,10 +153,22 @@ const MedicineListing = () => {
       <section className="ml-results">
         <div className="ml-container">
           <div className="ml-results-header">
-            <h2>{filteredMedicines.length} Medicines</h2>
+            <h2>{loading ? 'Loading...' : `${medicines.length} Medicines`}</h2>
           </div>
 
-          {filteredMedicines.length === 0 ? (
+          {loading ? (
+             <div className="ml-empty">
+               <Loader size={48} className="spin-icon" style={{ opacity: 0.5, animation: 'spin 2s linear infinite' }} />
+               <h3>Fetching Medicines</h3>
+               <p>Please wait while we load the database.</p>
+             </div>
+          ) : error ? (
+            <div className="ml-empty">
+              <AlertTriangle size={48} style={{ opacity: 0.5, color: '#ef4444' }} />
+              <h3>Error</h3>
+              <p>{error}</p>
+            </div>
+          ) : medicines.length === 0 ? (
             <div className="ml-empty">
               <Pill size={48} style={{ opacity: 0.2 }} />
               <h3>No medicines found</h3>
@@ -145,7 +176,7 @@ const MedicineListing = () => {
             </div>
           ) : (
             <div className="ml-grid">
-              {filteredMedicines.map(med => (
+              {medicines.map(med => (
                 <Link
                   to={`/medicines/${med.slug}`}
                   key={med._id}

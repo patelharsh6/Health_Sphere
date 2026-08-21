@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { 
   Pill, Activity, AlertTriangle, ShieldAlert, 
   Info, ChevronDown, ChevronUp, Beaker, 
-  Zap, FileWarning, Thermometer 
+  Zap, FileWarning, Thermometer, Loader 
 } from 'lucide-react';
+import { medicineAPI } from '../services/api';
 import './MedicineDetail.css';
 
 // Reusable Collapsible Section Component
@@ -33,6 +35,50 @@ const CollapsibleSection = ({ title, icon, children, defaultOpen = true, type = 
 };
 
 const MedicineDetail = () => {
+  const { slug } = useParams();
+  const [medicine, setMedicine] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchMedicine = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await medicineAPI.getBySlug(slug);
+        if (res.data.success) {
+          setMedicine(res.data.data);
+        }
+      } catch (err) {
+        setError('Medicine not found.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMedicine();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="medicine-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <Loader size={48} className="spin-icon" style={{ opacity: 0.5, animation: 'spin 2s linear infinite' }} />
+      </div>
+    );
+  }
+
+  if (error || !medicine) {
+    return (
+      <div className="medicine-page" style={{ textAlign: 'center', padding: '100px 20px' }}>
+        <AlertTriangle size={64} style={{ color: '#ef4444', marginBottom: '20px' }} />
+        <h1>Medicine Not Found</h1>
+        <p>The medicine you are looking for does not exist or has been removed.</p>
+        <Link to="/medicines" className="btn-primary" style={{ display: 'inline-block', marginTop: '20px', padding: '10px 20px', background: '#3b82f6', color: 'white', borderRadius: '8px', textDecoration: 'none' }}>
+          Back to Medicines
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="medicine-page">
       
@@ -40,18 +86,21 @@ const MedicineDetail = () => {
       <header className="medicine-hero">
         <div className="hero-container">
           <div className="breadcrumbs">
-            <a href="/">Home</a> / <a href="/medicines">Medicines</a> / <span>Paracetamol</span>
+            <Link to="/">Home</Link> / <Link to="/medicines">Medicines</Link> / <span>{medicine.name}</span>
           </div>
           <div className="medicine-badges">
-            <span className="badge type-badge">Tablet / Syrup</span>
-            <span className="badge category-badge">Pain Reliever / Fever Reducer</span>
-            <span className="badge otc-badge">Over The Counter (OTC)</span>
+            <span className="badge type-badge">{medicine.type}</span>
+            <span className="badge category-badge">{medicine.category}</span>
+            {medicine.prescriptionRequired ? (
+              <span className="badge otc-badge" style={{ background: '#fee2e2', color: '#b91c1c' }}>Prescription Required (Rx)</span>
+            ) : (
+              <span className="badge otc-badge">Over The Counter (OTC)</span>
+            )}
           </div>
-          <h1>Paracetamol</h1>
-          <p className="generic-name"><strong>Generic Name:</strong> Acetaminophen</p>
+          <h1>{medicine.name}</h1>
+          <p className="generic-name"><strong>Generic Name:</strong> {medicine.genericName}</p>
           <p className="medicine-summary">
-            A widely used medication to treat mild to moderate pain and reduce fever. 
-            It is generally safe when used at recommended doses but can cause severe liver damage if overdosed.
+            {medicine.summary}
           </p>
         </div>
       </header>
@@ -62,88 +111,100 @@ const MedicineDetail = () => {
         <main className="main-content">
           
           {/* 3. USES SECTION */}
-          <CollapsibleSection title="Primary Uses" icon={<Activity size={24} />} type="info">
-            <p>Paracetamol is commonly used to treat and manage the following conditions:</p>
-            <div className="uses-tags">
-              <span className="use-tag">Fever</span>
-              <span className="use-tag">Headache</span>
-              <span className="use-tag">Muscle Ache</span>
-              <span className="use-tag">Toothache</span>
-              <span className="use-tag">Cold & Flu Symptoms</span>
-              <span className="use-tag">Menstrual Cramps</span>
-            </div>
-          </CollapsibleSection>
+          {medicine.uses && medicine.uses.length > 0 && (
+            <CollapsibleSection title="Primary Uses" icon={<Activity size={24} />} type="info">
+              <p>{medicine.name} is commonly used to treat and manage the following conditions:</p>
+              <div className="uses-tags">
+                {medicine.uses.map((u, i) => (
+                  <span key={i} className="use-tag">{u}</span>
+                ))}
+              </div>
+            </CollapsibleSection>
+          )}
 
           {/* 4. HOW IT WORKS */}
-          <CollapsibleSection title="How it Works" icon={<Beaker size={24} />}>
-            <p>
-              Paracetamol works by blocking the production of certain chemical messengers (prostaglandins) in the brain that cause pain and fever. 
-              Unlike NSAIDs (like Ibuprofen), it has very little anti-inflammatory effect, meaning it doesn't reduce swelling.
-            </p>
-          </CollapsibleSection>
+          {medicine.howItWorks && (
+            <CollapsibleSection title="How it Works" icon={<Beaker size={24} />}>
+              <p>
+                {medicine.howItWorks}
+              </p>
+            </CollapsibleSection>
+          )}
 
           {/* 5. DOSAGE GUIDELINES */}
-          <CollapsibleSection title="Dosage Guidelines" icon={<Pill size={24} />} type="info">
-            <div className="dosage-box">
-              <div className="dose-group">
-                <h4>Adults (12 years and older)</h4>
-                <p>500mg to 1000mg every 4–6 hours as needed.</p>
-                <span className="dose-limit">Maximum: 4,000mg (4 grams) in 24 hours.</span>
+          {medicine.dosage && (
+            <CollapsibleSection title="Dosage Guidelines" icon={<Pill size={24} />} type="info">
+              <div className="dosage-box">
+                {medicine.dosage.adult && (
+                  <div className="dose-group">
+                    <h4>Adults</h4>
+                    <p>{medicine.dosage.adult}</p>
+                    {medicine.dosage.maxDaily && <span className="dose-limit">{medicine.dosage.maxDaily}</span>}
+                  </div>
+                )}
+                {medicine.dosage.child && (
+                  <div className="dose-group">
+                    <h4>Children</h4>
+                    <p>{medicine.dosage.child}</p>
+                  </div>
+                )}
               </div>
-              <div className="dose-group">
-                <h4>Children (Under 12 years)</h4>
-                <p>Dosage is strictly based on body weight (typically 10-15mg/kg every 4-6 hours).</p>
-                <span className="dose-limit">Do not exceed 5 doses in 24 hours.</span>
-              </div>
-            </div>
-            <div className="medical-note">
-              <Info size={16} />
-              <span><strong>Note:</strong> Always follow your doctor's recommendations or the instructions on the medicine label.</span>
-            </div>
-          </CollapsibleSection>
+              {medicine.dosage.notes && (
+                <div className="medical-note">
+                  <Info size={16} />
+                  <span><strong>Note:</strong> {medicine.dosage.notes}</span>
+                </div>
+              )}
+            </CollapsibleSection>
+          )}
 
           {/* 7. PRECAUTIONS (YELLOW) */}
-          <CollapsibleSection title="Precautions" icon={<FileWarning size={24} />} type="caution">
-            <p>Consult a healthcare provider before using Paracetamol if you:</p>
-            <ul className="content-list caution-list">
-              <li>Have severe liver or kidney disease.</li>
-              <li>Consume 3 or more alcoholic drinks every day.</li>
-              <li>Are severely underweight or malnourished.</li>
-              <li>Are allergic to acetaminophen.</li>
-            </ul>
-          </CollapsibleSection>
+          {medicine.precautions && medicine.precautions.length > 0 && (
+            <CollapsibleSection title="Precautions" icon={<FileWarning size={24} />} type="caution">
+              <p>Consult a healthcare provider before using {medicine.name} if you:</p>
+              <ul className="content-list caution-list">
+                {medicine.precautions.map((p, i) => (
+                  <li key={i}>{p}</li>
+                ))}
+              </ul>
+            </CollapsibleSection>
+          )}
 
           {/* 6. SIDE EFFECTS (RED) */}
-          <CollapsibleSection title="Side Effects" icon={<AlertTriangle size={24} />} type="warning">
-            <div className="side-effects-grid">
-              <div className="effect-column">
-                <h4>Common (Rare if taken correctly)</h4>
-                <ul>
-                  <li>Mild nausea</li>
-                  <li>Stomach upset</li>
-                </ul>
+          {medicine.sideEffects && (
+            <CollapsibleSection title="Side Effects" icon={<AlertTriangle size={24} />} type="warning">
+              <div className="side-effects-grid">
+                {medicine.sideEffects.common && medicine.sideEffects.common.length > 0 && (
+                  <div className="effect-column">
+                    <h4>Common</h4>
+                    <ul>
+                      {medicine.sideEffects.common.map((e, i) => <li key={i}>{e}</li>)}
+                    </ul>
+                  </div>
+                )}
+                {medicine.sideEffects.serious && medicine.sideEffects.serious.length > 0 && (
+                  <div className="effect-column danger">
+                    <h4>Serious (Seek immediate help)</h4>
+                    <ul>
+                      {medicine.sideEffects.serious.map((e, i) => <li key={i}>{e}</li>)}
+                    </ul>
+                  </div>
+                )}
               </div>
-              <div className="effect-column danger">
-                <h4>Serious (Seek immediate help)</h4>
-                <ul>
-                  <li>Dark urine or pale stools</li>
-                  <li>Yellowing of skin/eyes (Jaundice)</li>
-                  <li>Severe allergic reaction (Rash, swelling)</li>
-                </ul>
-              </div>
-            </div>
-          </CollapsibleSection>
+            </CollapsibleSection>
+          )}
 
           {/* 8. DRUG INTERACTIONS */}
-          <CollapsibleSection title="Drug Interactions" icon={<Zap size={24} />} type="caution">
-            <p>Paracetamol can interact dangerously with certain substances. Avoid combining with:</p>
-            <ul className="content-list interaction-list">
-              <li><strong>Alcohol:</strong> Dramatically increases the risk of liver damage.</li>
-              <li><strong>Other Cold Medicines:</strong> Many OTC cold medicines already contain Paracetamol. Taking both causes accidental overdose.</li>
-              <li><strong>Ketoconazole:</strong> Can increase the risk of liver toxicity.</li>
-              <li><strong>Blood Thinners (Warfarin):</strong> Long-term use of Paracetamol may increase bleeding risk.</li>
-            </ul>
-          </CollapsibleSection>
+          {medicine.interactions && medicine.interactions.length > 0 && (
+            <CollapsibleSection title="Drug Interactions" icon={<Zap size={24} />} type="caution">
+              <p>{medicine.name} can interact with certain substances. Avoid combining with:</p>
+              <ul className="content-list interaction-list">
+                {medicine.interactions.map((int, i) => (
+                  <li key={i}><strong>{int.with}:</strong> {int.effect}</li>
+                ))}
+              </ul>
+            </CollapsibleSection>
+          )}
 
         </main>
 
@@ -151,27 +212,31 @@ const MedicineDetail = () => {
         <aside className="sidebar-content">
           
           {/* 2. QUICK INFO */}
-          <div className="side-panel">
-            <h3>Quick Information</h3>
-            <ul className="info-list">
-              <li>
-                <span className="info-label">Used For</span>
-                <span className="info-value">Pain, Fever</span>
-              </li>
-              <li>
-                <span className="info-label">Prescription</span>
-                <span className="info-value no">No (OTC)</span>
-              </li>
-              <li>
-                <span className="info-label">Safe for Children</span>
-                <span className="info-value yes">Yes (Dose specific)</span>
-              </li>
-              <li>
-                <span className="info-label">Pregnancy Safe</span>
-                <span className="info-value yes">Yes (Consult doctor)</span>
-              </li>
-            </ul>
-          </div>
+          {medicine.quickInfo && (
+            <div className="side-panel">
+              <h3>Quick Information</h3>
+              <ul className="info-list">
+                <li>
+                  <span className="info-label">Used For</span>
+                  <span className="info-value">{medicine.quickInfo.usedFor || '-'}</span>
+                </li>
+                <li>
+                  <span className="info-label">Prescription</span>
+                  <span className={`info-value ${medicine.prescriptionRequired ? 'yes' : 'no'}`}>
+                    {medicine.prescriptionRequired ? 'Yes (Rx)' : 'No (OTC)'}
+                  </span>
+                </li>
+                <li>
+                  <span className="info-label">Safe for Children</span>
+                  <span className="info-value">{medicine.quickInfo.safeForChildren || 'Consult doctor'}</span>
+                </li>
+                <li>
+                  <span className="info-label">Pregnancy Safe</span>
+                  <span className="info-value">{medicine.quickInfo.pregnancySafe || 'Consult doctor'}</span>
+                </li>
+              </ul>
+            </div>
+          )}
 
           {/* 11. SAFETY DISCLAIMER */}
           <div className="disclaimer-panel">
@@ -185,29 +250,28 @@ const MedicineDetail = () => {
           </div>
 
           {/* 9. RELATED DISEASES */}
-          <div className="side-panel">
-            <h3>Used in Diseases</h3>
-            <a href="/diseases/influenza" className="related-link">
-              <Thermometer size={16} /> Influenza (Flu)
-            </a>
-            <a href="/diseases/cold" className="related-link">
-              <Activity size={16} /> Common Cold
-            </a>
-            <a href="/diseases/dengue" className="related-link">
-              <AlertTriangle size={16} /> Viral Fever
-            </a>
-          </div>
+          {medicine.relatedDiseases && medicine.relatedDiseases.length > 0 && (
+            <div className="side-panel">
+              <h3>Used in Diseases</h3>
+              {medicine.relatedDiseases.map((dSlug) => (
+                <Link to={`/diseases/${dSlug}`} key={dSlug} className="related-link">
+                  <Activity size={16} /> {dSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </Link>
+              ))}
+            </div>
+          )}
 
           {/* 10. RELATED MEDICINES */}
-          <div className="side-panel">
-            <h3>Alternative Medicines</h3>
-            <a href="/medicines/ibuprofen" className="related-link">
-              <Pill size={16} /> Ibuprofen
-            </a>
-            <a href="/medicines/aspirin" className="related-link">
-              <Pill size={16} /> Aspirin
-            </a>
-          </div>
+          {medicine.alternatives && medicine.alternatives.length > 0 && (
+            <div className="side-panel">
+              <h3>Alternative Medicines</h3>
+              {medicine.alternatives.map((aSlug) => (
+                <Link to={`/medicines/${aSlug}`} key={aSlug} className="related-link">
+                  <Pill size={16} /> {aSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </Link>
+              ))}
+            </div>
+          )}
 
         </aside>
       </div>
