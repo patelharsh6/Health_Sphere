@@ -56,6 +56,8 @@ api.interceptors.response.use(
 // ═══════════════════════════════════════
 // AUTH ENDPOINTS
 // ═══════════════════════════════════════
+
+
 export const authAPI = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
@@ -136,6 +138,10 @@ export const reportAPI = {
 // AI ENDPOINTS
 // ═══════════════════════════════════════
 export const aiAPI = {
+  chat: (data) => api.post('/ai/chat', data),
+  getSessions: () => api.get('/ai/chat/sessions'),
+  getSession: (id) => api.get(`/ai/chat/${id}`),
+  deleteSession: (id) => api.delete(`/ai/chat/${id}`),
   symptomCheck: (symptoms) => api.post('/ai/symptom-check', { symptoms }),
   getAllDiseases: (params) => api.get('/ai/diseases', { params }),
   getDiseaseCategories: () => api.get('/ai/diseases/categories'),

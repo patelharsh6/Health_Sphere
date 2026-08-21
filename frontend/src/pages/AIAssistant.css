@@ -1,21 +1,102 @@
 .ai-chat-page {
-  padding: 40px 20px;
+  padding: 2rem;
   background-color: #f8fafc;
   min-height: calc(100vh - 70px);
+}
+
+.chat-layout {
+  display: flex;
+  gap: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  height: calc(100vh - 120px);
+}
+
+.chat-sidebar {
+  flex: 0 0 250px;
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  gap: 1rem;
+  overflow: hidden;
+}
+
+.new-chat-btn {
+  width: 100%;
   display: flex;
   justify-content: center;
+  gap: 0.5rem;
+}
+
+.sessions-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.session-item {
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #f8fafc;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.session-item:hover {
+  border-color: #e2e8f0;
+}
+
+.session-item.active {
+  background: rgba(43, 90, 228, 0.05);
+  border-color: #0ea5e9;
+  color: #0ea5e9;
+}
+
+.session-title {
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80%;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.session-item:hover .delete-btn {
+  opacity: 1;
+}
+
+.delete-btn:hover {
+  color: #ef4444;
 }
 
 .chat-container {
-  width: 100%;
-  max-width: 800px;
+  flex: 1;
   background: white;
   border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 120px);
+  height: 100%;
   overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .chat-header {
