@@ -1,3 +1,4 @@
+const fs = require('fs');
 const { validationResult } = require('express-validator');
 
 /**
@@ -12,6 +13,14 @@ const { validationResult } = require('express-validator');
 const validate = (req, res, next) => {
   const result = validationResult(req);
   if (result.isEmpty()) return next();
+
+  // On a multipart route multer has already written the file to disk by the
+  // time the rules run, so a rejected request would otherwise leave an
+  // orphaned upload behind.
+  const uploaded = [req.file, ...(Object.values(req.files || {}).flat())].filter(Boolean);
+  for (const file of uploaded) {
+    if (file.path) fs.promises.unlink(file.path).catch(() => {});
+  }
 
   const errors = {};
   for (const err of result.array()) {

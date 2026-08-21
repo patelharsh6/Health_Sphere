@@ -8,6 +8,8 @@ Node.js + Express + MongoDB REST API for the HealthSphere digital healthcare pla
 - **Framework:** Express.js
 - **Database:** MongoDB + Mongoose
 - **Auth:** JWT (jsonwebtoken) + bcryptjs
+- **Validation:** express-validator
+- **Rate limiting:** express-rate-limit
 - **File Upload:** Multer
 - **Logging:** Morgan
 
@@ -58,12 +60,37 @@ This creates:
 
 ## API Endpoints
 
+All `/api/auth` routes are rate limited (30 requests / 15 min / IP; 10 for the
+credential endpoints). Every mutating route runs `express-validator` rules and
+returns `400 { success, message, errors: { field } }` on a validation failure.
+
 ### Auth (`/api/auth`)
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
-| POST | `/register` | Public | Register new user |
+| POST | `/register` | Public | Register new user (patient / doctor / admin) |
 | POST | `/login` | Public | Login user |
-| GET | `/me` | Private | Get current user |
+| GET | `/me` | Private | Get current user, role profile, and `isVerified` |
+| PUT | `/password` | Private | Change password (returns a rotated token) |
+| POST | `/forgot-password` | Public | Request a reset token |
+| POST | `/reset-password/:token` | Public | Reset the password with that token |
+| POST | `/avatar` | Private | Upload an avatar (`avatar` field, image, 2 MB) |
+| POST | `/logout` | Private | Stateless logout acknowledgement |
+
+**Doctor verification** — a new doctor is created with `isVerified: false` and is
+excluded from `GET /api/doctors` until an admin approves the medical license
+(`PUT /api/admin/doctors/:id/verify`, Phase 7). They can log in, and `/me`
+reports `isVerified: false` so the UI can show a pending state.
+
+**Password reset** — only a SHA-256 hash of the token is stored, on
+`User.resetPasswordToken`, with a 30-minute expiry. Tokens are single use.
+Mail delivery arrives in Phase 8; until then the reset URL is logged
+server-side and, outside production, also returned in the response body so the
+flow is testable. Changing or resetting a password invalidates every token
+issued before the change.
+
+**Avatars** — written to `uploads/avatars/` and served from the public
+`/uploads/avatars` static mount. Everything else under `uploads/` stays
+auth-gated: medical reports are streamed through `GET /api/reports/:id/file`.
 
 ### Patients (`/api/patients`)
 | Method | Endpoint | Access | Description |
@@ -96,6 +123,7 @@ This creates:
 | POST | `/upload` | Patient | Upload medical report |
 | GET | `/` | Patient | Get my reports |
 | GET | `/:id` | Private | Get report with analysis |
+| GET | `/:id/file` | Owner/Doctor/Admin | Stream the report file |
 | PUT | `/:id/review` | Doctor | Review a report |
 
 ### AI (`/api/ai`)
@@ -129,6 +157,7 @@ backend/
     │   ├── Doctor.js      # Doctor profile
     │   ├── Appointment.js # Appointments
     │   ├── Report.js      # Medical reports
+    │   ├── Admin.js       # Admin profile (hospitalId, permissions)
     │   └── Disease.js     # Disease reference
     ├── controllers/
     │   ├── authController.js
@@ -146,10 +175,19 @@ backend/
     │   └── aiRoutes.js
     ├── middleware/
     │   ├── authMiddleware.js  # JWT verification
-    │   └── roleMiddleware.js  # Role-based access
+    │   ├── roleMiddleware.js  # Role-based access
+    │   ├── rateLimit.js       # Auth rate limiters
+    │   └── validate.js        # express-validator → 400 envelope
+    ├── validators/
+    │   ├── authValidators.js
+    │   ├── appointmentValidators.js
+    │   ├── reportValidators.js
+    │   └── profileValidators.js
     └── utils/
         ├── jwt.js             # Token helpers
+        ├── slugify.js         # Shared slug helper
         ├── reportParser.js    # AI report analysis (mock)
         ├── riskCalculator.js  # Health risk scoring
+        ├── seedData/          # Static seed content (diseases)
         └── seeder.js          # Sample data seeder
 ```

@@ -13,8 +13,8 @@
 | Area | Files | Status |
 |---|---|---|
 | App bootstrap | `server.js`, `src/app.js`, `src/config/{db,env}.js` | ✅ |
-| Auth | `authController` (register/login/getMe), `utils/jwt.js`, `middleware/authMiddleware.js`, `middleware/roleMiddleware.js` | ✅ |
-| Models | `User`, `Patient`, `Doctor`, `Appointment`, `Report`, `Disease` | ✅ |
+| Auth | `authController` (register/login/getMe/password/reset/avatar/logout), `utils/jwt.js`, `middleware/{authMiddleware,roleMiddleware,rateLimit,validate}.js`, `validators/` | ✅ |
+| Models | `User`, `Patient`, `Doctor`, `Admin`, `Appointment`, `Report`, `Disease` | ✅ |
 | Patients | profile GET/PUT, dashboard | ⚠️ |
 | Doctors | list, by id, slots, profile PUT | ⚠️ |
 | Appointments | book, list, by id, update, cancel | ⚠️ |
@@ -27,7 +27,7 @@
 | Page | Route | Backend today | Gap |
 |---|---|---|---|
 | Home | `/` | none needed | — |
-| Login / Signup | `/login`, `/signup` | `POST /auth/login`, `/auth/register` | admin `hospitalId` discarded; doctors self-verify |
+| Login / Signup | `/login`, `/signup` | `POST /auth/login`, `/auth/register` | ✅ works |
 | SymptomChecker | `/symptoms` | `POST /ai/symptom-check` | ✅ works |
 | DiseaseListing | `/diseases` | `GET /ai/diseases` | ⚠️ `description` not selected → cards render `undefined...`; category enums mismatch |
 | DiseaseDetail | `/diseases/:slug` | `GET /ai/diseases/:slug` | ⚠️ falls back to hardcoded data when DB is empty |
@@ -43,7 +43,7 @@
 | ReportUpload | `/upload`, `/reports` | `POST /reports/upload`, `GET /reports` | ⚠️ AI analysis is mocked; no delete/download |
 | ReportAnalysis | `/analysis/:id` | `GET /reports/:id` | ❌ page never calls the API; response lacks `unit`/`trend`/lab |
 | AIAssistant | `/ai-assistant` | ❌ nothing | page fakes replies with `setTimeout` |
-| UserProfile | `/profile` | `PUT /patients/profile`, `PUT /doctors/profile` | ⚠️ falsy values silently dropped; no avatar upload |
+| UserProfile | `/profile` | `PUT /patients/profile`, `PUT /doctors/profile`, `PUT /auth/password`, `POST /auth/avatar` | ✅ works |
 | NotFound | `*` | — | — |
 
 ### 1.3 Defects found during the audit
@@ -56,8 +56,8 @@
 6. ✅ **`PUT /api/appointments/:id` has no ownership check** — `appointmentController.js:146`; any authenticated doctor could rewrite any appointment's status/prescription.
 7. ✅ **Uploaded reports are world-readable** — `app.use('/uploads', express.static(...))` served PHI with no auth; anyone with the path could read another patient's report. `GET /api/reports/:id` also let *any* doctor read *any* report.
 8. ✅ **Truthy-guard updates drop legitimate values** — `updateDoctorProfile` / `updatePatientProfile` used `if (value)`, so `consultationFee: 0`, `experience: 0`, or clearing `bio` were silently ignored.
-9. ⬜ **Doctors self-verify** — `register()` hardcodes `isVerified: true`; the medical license is never checked. *(Phase 1)*
-10. ⬜ **Admin registration is a no-op** — `hospitalId` is destructured then thrown away; no Admin model exists, yet Signup offers an admin tab. *(Phase 1)*
+9. ✅ **Doctors self-verify** — `register()` hardcoded `isVerified: true` and the medical license was never checked. Self-registered doctors now land `isVerified: false`.
+10. ✅ **Admin registration is a no-op** — `hospitalId` was destructured then thrown away. `Admin` model added; `register()` creates the document and `getMe` returns it.
 11. ✅ **`.env` was missing keys** read by `config/env.js`: `NODE_ENV`, `JWT_EXPIRE`, `CLIENT_URL`. A missing `JWT_SECRET` silently fell back to `fallback_secret_key`.
 
 ### 1.4 Conventions to keep
@@ -100,33 +100,44 @@
 
 ---
 
-## Phase 1 — Auth, accounts, and validation
+## Phase 1 — Auth, accounts, and validation ✅ COMPLETE
 
 **Goal:** a production-grade auth surface plus a real validation layer.
 **Unblocks:** Signup (admin tab), UserProfile (avatar, password change), session robustness.
 
 ### Tasks
 
-1. **Validation middleware** — `express-validator` is installed but unused. Add `src/middleware/validate.js` (runs `validationResult`, returns 400 in the standard envelope) and `src/validators/{auth,appointment,report,profile}Validators.js`; wire to every mutating route.
-2. **Admin model + registration** — `src/models/Admin.js` (`user`, `hospitalId`, `permissions[]`); create it in `register()`; return it from `getMe`.
-3. **Doctor verification flow** — default `isVerified: false`. Unverified doctors are already excluded from `GET /doctors`; let them log in and expose `isVerified` via `getMe` so the UI can show a "pending verification" state. Admin verifies in Phase 7.
-4. **New auth endpoints** (`authController` + `authRoutes`):
-   - `PUT /api/auth/password` — change password (current + new).
-   - `POST /api/auth/forgot-password` / `POST /api/auth/reset-password/:token` — crypto token hashed onto `User.resetPasswordToken` + `resetPasswordExpire`.
-   - `POST /api/auth/logout` — stateless ack (or blacklist, if refresh tokens are added).
-5. **Avatar upload** — `POST /api/auth/avatar` (multer, image-only, 2 MB) writing to `uploads/avatars/`, storing the URL on `User.avatar`.
-6. **Rate limiting** — `express-rate-limit` on `/api/auth/*` (e.g. 10 requests / 15 min / IP) to blunt credential stuffing.
+1. ✅ **Validation middleware** — `src/middleware/validate.js` runs `validationResult` and returns `400 { success, message, errors: { field } }`; `message` carries the first failure so existing `alert(message)` paths still read well. It also unlinks whatever multer already wrote, so a rejected multipart request leaves no orphaned file on disk. `src/validators/{auth,appointment,report,profile}Validators.js` are wired to every mutating route, and to `:id` params so a malformed ObjectId is a 400 instead of a CastError 500. Enum rules read `schema.path(...).enumValues` off the models, so they cannot drift from the schema.
+2. ✅ **Admin model + registration** — `src/models/Admin.js` (`user`, `hospitalId`, `permissions[]`, defaulting to everything except `manage_users`); created in `register()` and returned by `getMe`. Profile creation is now rolled back if it throws, so a failed signup no longer strands a `User` whose email could never be registered again.
+3. ✅ **Doctor verification flow** — self-registered doctors are `isVerified: false`. They can still log in; `login` and `getMe` both return a top-level `isVerified` (always `true` for non-doctors, so the UI gates on one flag), `register` answers with a "pending verification" message, and `UserProfile` shows a pending banner. Admin verifies in Phase 7.
+4. ✅ **New auth endpoints** (`authController` + `authRoutes`):
+   - `PUT /api/auth/password` — returns **403**, not 401, on a wrong current password, so the axios interceptor does not wipe a valid session. Responds with a rotated token.
+   - `POST /api/auth/forgot-password` / `POST /api/auth/reset-password/:token` — `crypto.randomBytes(32)`, SHA-256 hashed onto `User.resetPasswordToken` with a 30-minute `resetPasswordExpire`, single use. Forgot-password answers identically for unknown emails so it is not an email-enumeration oracle. Mail delivery lands in Phase 8; until then the URL is logged server-side and, outside production, returned in the response so the flow is testable.
+   - `POST /api/auth/logout` — stateless ack. The client passes its token explicitly, because it clears local storage first and the request interceptor would otherwise find nothing to attach.
+5. ✅ **Avatar upload** — `POST /api/auth/avatar` (multer, JPEG/PNG/WebP, 2 MB) writes `<userId>-<timestamp>.<ext>` to `uploads/avatars/` and stores `/uploads/avatars/<file>` on `User.avatar`; the replaced file is deleted. `app.js` mounts `/uploads/avatars` statically — scoped to that one directory, so medical reports stay behind `GET /api/reports/:id/file`.
+6. ✅ **Rate limiting** — `express-rate-limit` across `/api/auth/*`: 30 requests / 15 min / IP, tightened to 10 for register, login, forgot-password and reset-password. Limits are relaxed 10× outside production so manual testing cannot lock itself out, and 429 responses use the standard envelope (a 401 there would have tripped the redirect interceptor).
+7. ✅ **Session robustness (added)** — `User.passwordChangedAt` plus a check in `authMiddleware` reject any token issued before a password change or reset, so a stolen token stops working the moment the owner resets.
 
 ### Frontend follow-up
 
-- `services/api.js`: add `authAPI.changePassword`, `forgotPassword`, `resetPassword`, `uploadAvatar`.
-- `UserProfile.js`: wire the password and avatar controls.
+- ✅ `services/api.js`: `authAPI.changePassword`, `forgotPassword`, `resetPassword`, `uploadAvatar`, `logout`, plus an `assetUrl()` helper — static files are served from the server root, not under `/api`.
+- ✅ `AuthContext`: `changePassword` (stores the rotated token — without it the next request 401s and bounces to `/login`), `uploadAvatar`, an `isVerified` flag, and `refreshProfile` now goes through `getMe`, which fixes doctors and admins silently not refreshing.
+- ✅ `UserProfile.js`: avatar picker with client-side type and size checks, and a change-password modal mirroring the server's strength rule.
+
+### Verification (run 2026-08-20)
+
+67/67 checks passed against a throwaway database (`phase1_scratch`), dropped afterwards; the live database was untouched. Covered: field-level validation failures, patient/doctor/admin registration, the verification gate against `GET /api/doctors`, password change with token rotation and old-token rejection, the full forgot/reset cycle including single use and hash-only storage, avatar upload (type, size, replacement cleanup, public serving, path traversal), logout, validators on the appointment/report/profile routes with Phase 0's zero-and-null behaviour intact, and rate limiting.
 
 ### Acceptance criteria
 
-- Registering with a 6-character password returns a 400 with a field-level message, not a 500.
-- Admin signup creates an `Admin` document carrying `hospitalId`.
-- A newly registered doctor does not appear in `GET /api/doctors` until verified.
+- ✅ Registering with a 6-character password returns a 400 with a field-level message, not a 500.
+- ✅ Admin signup creates an `Admin` document carrying `hospitalId`.
+- ✅ A newly registered doctor does not appear in `GET /api/doctors` until verified.
+
+### Outstanding
+
+- **No `/forgot-password` or `/reset-password/:token` page exists in the frontend.** The backend builds `${CLIENT_URL}/reset-password/:token`, so that link currently lands on `NotFound`. Those pages were not in this phase's frontend follow-up list — the reset flow works end to end through the API, but not yet from the UI.
+- Seeded doctors are still created `isVerified: true` on purpose, so a freshly seeded demo has bookable doctors. Only self-registration is gated.
 
 ---
 
