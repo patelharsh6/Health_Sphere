@@ -7,15 +7,17 @@ const fs = require('fs');
 const UPLOADS_DIR = path.resolve(__dirname, '../../uploads');
 
 // Multer config for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, UPLOADS_DIR);
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
-    cb(null, uniqueName);
-  },
-});
+const storage = process.env.STORAGE_DRIVER === 'cloudinary' 
+  ? require('../config/cloudinary').storage 
+  : multer.diskStorage({
+      destination: (req, file, cb) => {
+        cb(null, UPLOADS_DIR);
+      },
+      filename: (req, file, cb) => {
+        const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
+        cb(null, uniqueName);
+      },
+    });
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
@@ -56,21 +58,30 @@ const uploadReport = async (req, res) => {
       type: type || 'other',
       filePath: req.file.path,
       originalFileName: req.file.originalname,
+      status: 'processing',
     });
-
-    // Run AI analysis (mock)
-    const analysis = await parseReport(req.file.path, type || 'other');
-    report.aiAnalysis = {
-      ...analysis,
-      analyzedAt: new Date(),
-    };
-    await report.save();
 
     res.status(201).json({
       success: true,
-      message: 'Report uploaded and analyzed successfully!',
+      message: 'Report uploaded successfully. Analysis is running in the background.',
       data: report,
     });
+
+    // Run AI analysis asynchronously
+    parseReport(req.file.path, type || 'other', req.file.mimetype)
+      .then(async (analysis) => {
+        report.aiAnalysis = {
+          ...analysis,
+          analyzedAt: new Date(),
+        };
+        report.status = 'analyzed';
+        await report.save();
+      })
+      .catch(async (err) => {
+        console.error('Background Parse Error:', err);
+        report.status = 'failed';
+        await report.save();
+      });
   } catch (error) {
     console.error('UploadReport Error:', error);
     res.status(500).json({ success: false, message: 'Server error during upload.' });
@@ -224,6 +235,128 @@ const reviewReport = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Delete a report
+ * @route   DELETE /api/reports/:id
+ * @access  Private (Owner)
+ */
+const deleteReport = async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+    if (!report) return res.status(404).json({ success: false, message: 'Report not found.' });
+
+    if (report.patient.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized.' });
+    }
+
+    // Remove file if local
+    if (!report.filePath.startsWith('http')) {
+      const absolutePath = path.resolve(report.filePath);
+      if (fs.existsSync(absolutePath)) {
+        fs.unlinkSync(absolutePath);
+      }
+    }
+
+    await report.deleteOne();
+
+    res.status(200).json({ success: true, message: 'Report deleted successfully.' });
+  } catch (error) {
+    console.error('DeleteReport Error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * @desc    Reanalyze a report
+ * @route   POST /api/reports/:id/reanalyze
+ * @access  Private (Owner)
+ */
+const reanalyzeReport = async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+    if (!report) return res.status(404).json({ success: false, message: 'Report not found.' });
+
+    if (report.patient.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized.' });
+    }
+
+    report.status = 'processing';
+    await report.save();
+
+    res.status(200).json({ success: true, message: 'Re-analysis started.', data: report });
+
+    parseReport(report.filePath, report.type, '')
+      .then(async (analysis) => {
+        report.aiAnalysis = {
+          ...analysis,
+          analyzedAt: new Date(),
+        };
+        report.status = 'analyzed';
+        await report.save();
+      })
+      .catch(async (err) => {
+        console.error('Background Parse Error:', err);
+        report.status = 'failed';
+        await report.save();
+      });
+  } catch (error) {
+    console.error('ReanalyzeReport Error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * @desc    Get report trends
+ * @route   GET /api/reports/:id/trends
+ * @access  Private (Owner)
+ */
+const getReportTrends = async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+    if (!report) return res.status(404).json({ success: false, message: 'Report not found.' });
+
+    if (report.patient.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized.' });
+    }
+
+    // Find previous reports of same type
+    const history = await Report.find({
+      patient: req.user._id,
+      type: report.type,
+      status: 'analyzed'
+    }).sort({ uploadDate: 1 }).limit(5);
+
+    res.status(200).json({ success: true, data: history });
+  } catch (error) {
+    console.error('GetReportTrends Error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * @desc    Get reports pending review
+ * @route   GET /api/reports/pending-review
+ * @access  Private (Doctor)
+ */
+const getPendingReviews = async (req, res) => {
+  try {
+    // Basic implementation: find reports without doctor review for doctor's patients
+    const Appointment = require('../models/Appointment');
+    const appointments = await Appointment.find({ doctor: req.user._id }).select('patient');
+    const patientIds = [...new Set(appointments.map(a => a.patient.toString()))];
+
+    const reports = await Report.find({
+      patient: { $in: patientIds },
+      'doctorReview.reviewedBy': { $exists: false }
+    }).populate('patient', 'fullName email');
+
+    res.status(200).json({ success: true, data: reports });
+  } catch (error) {
+    console.error('GetPendingReviews Error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 module.exports = {
   upload,
   uploadReport,
@@ -231,4 +364,8 @@ module.exports = {
   getReportById,
   getReportFile,
   reviewReport,
+  deleteReport,
+  reanalyzeReport,
+  getReportTrends,
+  getPendingReviews,
 };
