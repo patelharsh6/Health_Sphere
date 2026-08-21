@@ -12,6 +12,7 @@ const DoctorDashboard = () => {
   const { user, profile, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
+  const [stats, setStats] = useState({ todayAppointments: 0, weekAppointments: 0, uniquePatients: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,10 +31,17 @@ const DoctorDashboard = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // Fetch today's/upcoming appointments
-      const res = await appointmentAPI.getMyAppointments({ status: 'confirmed', limit: 5 });
-      if (res.data.success) {
-        setAppointments(res.data.data);
+      // Fetch today's/upcoming appointments & dashboard stats
+      const [appointmentsRes, statsRes] = await Promise.all([
+        appointmentAPI.getMyAppointments({ status: 'confirmed', limit: 5 }),
+        doctorAPI.getDashboard()
+      ]);
+      
+      if (appointmentsRes.data.success) {
+        setAppointments(appointmentsRes.data.data);
+      }
+      if (statsRes.data.success) {
+        setStats(statsRes.data.data);
       }
     } catch (error) {
       console.error('Failed to load dashboard:', error);
@@ -101,27 +109,26 @@ const DoctorDashboard = () => {
           </div>
         </header>
 
-        {/* SUMMARY CARDS */}
         <div className="summary-grid mt-4">
           <div className="summary-card">
             <div className="summary-icon blue"><Calendar size={20} /></div>
             <div className="summary-info">
               <h3>Today's Appointments</h3>
-              <p className="summary-value">{appointments.length || 0}</p>
+              <p className="summary-value">{stats.todayAppointments || 0}</p>
             </div>
           </div>
           <div className="summary-card">
             <div className="summary-icon teal"><Users size={20} /></div>
             <div className="summary-info">
               <h3>Total Patients</h3>
-              <p className="summary-value">24</p>
+              <p className="summary-value">{stats.uniquePatients || 0}</p>
             </div>
           </div>
           <div className="summary-card">
             <div className="summary-icon green"><CheckCircle size={20} /></div>
             <div className="summary-info">
-              <h3>Consultations Done</h3>
-              <p className="summary-value">150+</p>
+              <h3>This Week</h3>
+              <p className="summary-value">{stats.weekAppointments || 0}</p>
             </div>
           </div>
         </div>

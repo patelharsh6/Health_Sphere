@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { doctorAPI } from '../services/api';
 import './DoctorSchedule.css';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -15,29 +16,14 @@ const TIME_SLOTS = [
   '16:00', '16:30', '17:00', '17:30'
 ];
 
-const mockSchedule = {
-  Monday: { enabled: true, slots: ['09:00', '09:30', '10:00', '10:30', '11:00', '14:00', '14:30', '15:00'] },
-  Tuesday: { enabled: true, slots: ['09:00', '09:30', '10:00', '10:30', '11:00', '14:00', '14:30'] },
-  Wednesday: { enabled: true, slots: ['10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30'] },
-  Thursday: { enabled: true, slots: ['09:00', '09:30', '10:00', '14:00', '14:30', '15:00'] },
-  Friday: { enabled: true, slots: ['09:00', '09:30', '10:00', '10:30', '11:00'] },
-  Saturday: { enabled: false, slots: [] },
-  Sunday: { enabled: false, slots: [] },
-};
-
-const upcomingAppointments = [
-  { id: 1, patient: 'Rahul Sharma', time: '09:00', date: 'Today', reason: 'Blood Pressure Review', status: 'confirmed' },
-  { id: 2, patient: 'Priya Patel', time: '10:30', date: 'Today', reason: 'Diabetes Follow-up', status: 'confirmed' },
-  { id: 3, patient: 'Neha Gupta', time: '14:00', date: 'Tomorrow', reason: 'Migraine Assessment', status: 'pending' },
-  { id: 4, patient: 'Amit Singh', time: '09:30', date: 'Apr 18', reason: 'Arthritis Consultation', status: 'confirmed' },
-];
-
 const DoctorSchedule = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [schedule, setSchedule] = useState(mockSchedule);
+  const [schedule, setSchedule] = useState({});
+  const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [isSaving, setIsSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (authLoading) return;
@@ -47,8 +33,32 @@ const DoctorSchedule = () => {
     }
     if (user?.role !== 'doctor') {
       navigate('/dashboard');
+      return;
     }
+    
+    fetchData();
   }, [isAuthenticated, authLoading, user, navigate]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [scheduleRes, upcomingRes] = await Promise.all([
+        doctorAPI.getSchedule(),
+        doctorAPI.getUpcoming()
+      ]);
+      
+      if (scheduleRes.data.success) {
+        setSchedule(scheduleRes.data.data);
+      }
+      if (upcomingRes.data.success) {
+        setUpcomingAppointments(upcomingRes.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch schedule data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleDayEnabled = (day) => {
     setSchedule(prev => ({
@@ -69,10 +79,13 @@ const DoctorSchedule = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
-    // Simulate saving
-    setTimeout(() => {
+    try {
+      await doctorAPI.saveSchedule(schedule);
+    } catch (error) {
+      console.error('Failed to save schedule:', error);
+    } finally {
       setIsSaving(false);
-    }, 1500);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -83,6 +96,14 @@ const DoctorSchedule = () => {
 
   const totalSlots = Object.values(schedule).reduce((sum, day) => sum + (day.enabled ? day.slots.length : 0), 0);
   const activeDays = Object.values(schedule).filter(d => d.enabled).length;
+
+  if (loading) {
+    return (
+      <div className="ds-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <Loader size={48} className="spin-icon" style={{ opacity: 0.5, animation: 'spin 2s linear infinite' }} />
+      </div>
+    );
+  }
 
   return (
     <div className="ds-page">

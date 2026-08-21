@@ -83,6 +83,13 @@ export const doctorAPI = {
   getById: (id) => api.get(`/doctors/${id}`),
   getSlots: (id, date) => api.get(`/doctors/${id}/slots`, { params: { date } }),
   updateProfile: (data) => api.put('/doctors/profile', data),
+  getDashboard: () => api.get('/doctors/dashboard'),
+  getSchedule: () => api.get('/doctors/schedule'),
+  saveSchedule: (data) => api.put('/doctors/schedule', data),
+  getUpcoming: () => api.get('/doctors/appointments/upcoming'),
+  getPatients: (params) => api.get('/doctors/patients', { params }),
+  getPatientById: (patientId) => api.get(`/doctors/patients/${patientId}`),
+  updatePatientStatus: (patientId, data) => api.put(`/doctors/patients/${patientId}/status`, data),
 };
 
 // ═══════════════════════════════════════

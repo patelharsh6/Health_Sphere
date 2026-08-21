@@ -6,38 +6,25 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { doctorAPI } from '../services/api';
 import './DoctorPatients.css';
-
-// Mock patient data
-const mockPatients = [
-  {
-    _id: '1', fullName: 'Rahul Sharma', email: 'rahul@example.com', phone: '9876543210',
-    age: 28, gender: 'Male', lastVisit: '2026-04-10', condition: 'Hypertension', status: 'Active'
-  },
-  {
-    _id: '2', fullName: 'Priya Patel', email: 'priya@example.com', phone: '9123456789',
-    age: 35, gender: 'Female', lastVisit: '2026-04-08', condition: 'Diabetes Type 2', status: 'Active'
-  },
-  {
-    _id: '3', fullName: 'Amit Singh', email: 'amit@example.com', phone: '9988776655',
-    age: 45, gender: 'Male', lastVisit: '2026-03-28', condition: 'Arthritis', status: 'Follow Up'
-  },
-  {
-    _id: '4', fullName: 'Neha Gupta', email: 'neha@example.com', phone: '9876501234',
-    age: 32, gender: 'Female', lastVisit: '2026-04-05', condition: 'Migraine', status: 'Active'
-  },
-  {
-    _id: '5', fullName: 'Vikram Joshi', email: 'vikram@example.com', phone: '9012345678',
-    age: 52, gender: 'Male', lastVisit: '2026-03-15', condition: 'Back Pain', status: 'Discharged'
-  }
-];
 
 const DoctorPatients = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [patients, setPatients] = useState(mockPatients);
+  const [patients, setPatients] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
+  const [loading, setLoading] = useState(true);
+
+  // Debounce search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -47,8 +34,30 @@ const DoctorPatients = () => {
     }
     if (user?.role !== 'doctor') {
       navigate('/dashboard');
+      return;
     }
   }, [isAuthenticated, authLoading, user, navigate]);
+
+  useEffect(() => {
+    const fetchPatients = async () => {
+      if (!isAuthenticated || user?.role !== 'doctor') return;
+      try {
+        setLoading(true);
+        const res = await doctorAPI.getPatients({
+          search: debouncedSearch || undefined,
+          status: filterStatus
+        });
+        if (res.data.success) {
+          setPatients(res.data.data);
+        }
+      } catch (error) {
+        console.error('Failed to load patients:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPatients();
+  }, [debouncedSearch, filterStatus, isAuthenticated, user]);
 
   const getInitials = (name) => {
     return name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'P';
@@ -63,12 +72,16 @@ const DoctorPatients = () => {
     }
   };
 
-  const filteredPatients = patients.filter(p => {
-    const matchSearch = p.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.condition.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus = filterStatus === 'All' || p.status === filterStatus;
-    return matchSearch && matchStatus;
-  });
+  // Filter is handled by API mostly, but keeping this in case for any minor sync issue
+  const filteredPatients = patients;
+
+  if (loading && patients.length === 0) {
+    return (
+      <div className="dp-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <Loader size={48} className="spin-icon" style={{ opacity: 0.5, animation: 'spin 2s linear infinite' }} />
+      </div>
+    );
+  }
 
   return (
     <div className="dp-page">
@@ -165,7 +178,7 @@ const DoctorPatients = () => {
                       </div>
                       <div className="dp-detail-item">
                         <Calendar size={14} />
-                        <span><strong>Last Visit:</strong> {new Date(patient.lastVisit).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        <span><strong>Last Visit:</strong> {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No visits yet'}</span>
                       </div>
                       <div className="dp-detail-item">
                         <Mail size={14} />
