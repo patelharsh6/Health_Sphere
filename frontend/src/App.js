@@ -24,6 +24,12 @@ import UserProfile from './pages/UserProfile';
 import AIAssistant from './pages/AIAssistant';
 import NotFound from './pages/NotFound';
 
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminDoctors from './pages/admin/AdminDoctors';
+import AdminContent from './pages/admin/AdminContent';
+import AdminAppointments from './pages/admin/AdminAppointments';
+
 function App() {
   const location = useLocation();
 
@@ -58,6 +64,13 @@ function App() {
         <Route path="/doctors" element={<DoctorListing />} />
         <Route path="/my-appointments" element={<AppointmentHistory />} />
         <Route path="/profile" element={<UserProfile />} />
+
+        {/* Admin Routes */}
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/doctors" element={<AdminDoctors />} />
+        <Route path="/admin/content" element={<AdminContent />} />
+        <Route path="/admin/appointments" element={<AdminAppointments />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>

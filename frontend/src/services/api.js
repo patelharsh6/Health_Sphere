@@ -158,4 +158,23 @@ export const medicineAPI = {
   getCategories: () => api.get('/medicines/categories'),
 };
 
+// ═══════════════════════════════════════
+// ADMIN ENDPOINTS
+// ═══════════════════════════════════════
+export const adminAPI = {
+  getStats: () => api.get('/admin/stats'),
+  getUsers: () => api.get('/admin/users'),
+  updateUserStatus: (id, isActive) => api.put(`/admin/users/${id}/status`, { isActive }),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
+  getPendingDoctors: () => api.get('/admin/doctors/pending'),
+  verifyDoctor: (id) => api.put(`/admin/doctors/${id}/verify`),
+  getAppointments: () => api.get('/admin/appointments'),
+  getDiseases: () => api.get('/admin/content/diseases'),
+  createDisease: (data) => api.post('/admin/content/diseases', data),
+  deleteDisease: (id) => api.delete(`/admin/content/diseases/${id}`),
+  getMedicines: () => api.get('/admin/content/medicines'),
+  createMedicine: (data) => api.post('/admin/content/medicines', data),
+  deleteMedicine: (id) => api.delete(`/admin/content/medicines/${id}`),
+};
+
 export default api;

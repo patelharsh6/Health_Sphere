@@ -44,8 +44,11 @@ const Navbar = () => {
         { name: 'Schedule', icon: <Calendar size={20} />, href: '/schedule' },
       ],
       admin: [
-        { name: 'Admin', icon: <ShieldCheck size={20} />, href: '/admin' },
-        { name: 'Analytics', icon: <Activity size={20} />, href: '/analytics' },
+        { name: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/admin/dashboard' },
+        { name: 'Users', icon: <User size={20} />, href: '/admin/users' },
+        { name: 'Doctors', icon: <Stethoscope size={20} />, href: '/admin/doctors' },
+        { name: 'Appointments', icon: <Calendar size={20} />, href: '/admin/appointments' },
+        { name: 'Content', icon: <FileText size={20} />, href: '/admin/content' },
       ]
     };
     return links[role] || links.patient;
