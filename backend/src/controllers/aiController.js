@@ -123,4 +123,46 @@ const getAllDiseases = async (req, res) => {
   }
 };
 
-module.exports = { symptomCheck, getDiseaseBySlug, getAllDiseases };
+/**
+ * @desc    Get distinct disease categories
+ * @route   GET /api/ai/diseases/categories
+ * @access  Public
+ */
+const getDiseaseCategories = async (req, res) => {
+  try {
+    const categories = await Disease.distinct('category');
+    res.status(200).json({
+      success: true,
+      data: categories,
+    });
+  } catch (error) {
+    console.error('GetDiseaseCategories Error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+/**
+ * @desc    Get doctors matching a disease's specialistType
+ * @route   GET /api/ai/diseases/:slug/doctors
+ * @access  Public
+ */
+const getDiseaseDoctors = async (req, res) => {
+  try {
+    const disease = await Disease.findOne({ slug: req.params.slug });
+
+    if (!disease) {
+      return res.status(404).json({ success: false, message: 'Disease not found.' });
+    }
+
+    const Doctor = require('../models/Doctor');
+    const doctors = await Doctor.find({ specialization: disease.specialistType, isVerified: true })
+      .populate('user', 'fullName avatar _id');
+
+    res.status(200).json({ success: true, data: doctors });
+  } catch (error) {
+    console.error('GetDiseaseDoctors Error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+module.exports = { symptomCheck, getDiseaseBySlug, getAllDiseases, getDiseaseCategories, getDiseaseDoctors };
