@@ -42,6 +42,26 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    auditTrail: [
+      {
+        action: String,
+        date: Date,
+        previousDate: Date,
+        previousTime: String,
+        by: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+      }
+    ],
+    cancelledBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    cancellationReason: {
+      type: String,
+      default: '',
+    },
   },
   {
     timestamps: true,
@@ -51,5 +71,9 @@ const appointmentSchema = new mongoose.Schema(
 // Index for efficient queries
 appointmentSchema.index({ patient: 1, date: -1 });
 appointmentSchema.index({ doctor: 1, date: -1 });
+appointmentSchema.index(
+  { doctor: 1, date: 1, time: 1 },
+  { unique: true, partialFilterExpression: { status: { $in: ['pending', 'confirmed'] } } }
+);
 
 module.exports = mongoose.model('Appointment', appointmentSchema);

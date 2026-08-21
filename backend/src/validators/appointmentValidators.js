@@ -36,10 +36,38 @@ const updateAppointmentValidator = [
     .isLength({ max: 2000 }).withMessage('Notes must be 2000 characters or fewer.'),
 ];
 
+const rescheduleAppointmentValidator = [
+  objectId('id'),
+  body('date').notEmpty().withMessage('Please select a date.')
+    .isISO8601().withMessage('Date must be a valid date.'),
+  body('time').notEmpty().withMessage('Please select a time slot.')
+    .matches(TIME_24H).withMessage('Time must be in HH:MM 24-hour format.'),
+];
+
+const completeAppointmentValidator = [
+  objectId('id'),
+  body('prescription').notEmpty().withMessage('Prescription is required to complete an appointment.')
+    .isString().withMessage('Prescription must be text.')
+    .isLength({ max: 2000 }).withMessage('Prescription must be 2000 characters or fewer.'),
+  body('notes').optional({ values: 'null' })
+    .isString().withMessage('Notes must be text.')
+    .isLength({ max: 2000 }).withMessage('Notes must be 2000 characters or fewer.'),
+];
+
+const cancelAppointmentValidator = [
+  objectId('id'),
+  body('cancellationReason').optional({ values: 'falsy' })
+    .isString().withMessage('Cancellation reason must be text.')
+    .isLength({ max: 500 }).withMessage('Cancellation reason must be 500 characters or fewer.'),
+];
+
 const appointmentIdValidator = [objectId('id')];
 
 module.exports = {
   bookAppointmentValidator,
   updateAppointmentValidator,
+  rescheduleAppointmentValidator,
+  completeAppointmentValidator,
+  cancelAppointmentValidator,
   appointmentIdValidator,
 };
