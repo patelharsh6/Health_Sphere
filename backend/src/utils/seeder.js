@@ -100,13 +100,23 @@ const seedData = async () => {
       { fullName: 'Dr. Anjali Desai', email: 'anjali.doc@healthsphere.com', phone: '9000000006', license: 'MD-10006', spec: 'General Physician', exp: 6, hospital: 'HealthSphere Main', fee: 400, rating: 4.5 },
     ];
 
-    const defaultSlots = [
-      { day: 'Monday', startTime: '09:00', endTime: '17:00' },
-      { day: 'Tuesday', startTime: '09:00', endTime: '17:00' },
-      { day: 'Wednesday', startTime: '09:00', endTime: '17:00' },
-      { day: 'Thursday', startTime: '09:00', endTime: '17:00' },
-      { day: 'Friday', startTime: '09:00', endTime: '17:00' },
-      { day: 'Saturday', startTime: '10:00', endTime: '14:00' },
+    const generateSlots = (startH, endH) => {
+      const slots = [];
+      for (let h = startH; h < endH; h++) {
+        slots.push(`${h.toString().padStart(2, '0')}:00`);
+        slots.push(`${h.toString().padStart(2, '0')}:30`);
+      }
+      return slots;
+    };
+
+    const defaultSchedule = [
+      { day: 'Monday', enabled: true, slots: generateSlots(9, 17) },
+      { day: 'Tuesday', enabled: true, slots: generateSlots(9, 17) },
+      { day: 'Wednesday', enabled: true, slots: generateSlots(9, 17) },
+      { day: 'Thursday', enabled: true, slots: generateSlots(9, 17) },
+      { day: 'Friday', enabled: true, slots: generateSlots(9, 17) },
+      { day: 'Saturday', enabled: true, slots: generateSlots(10, 14) },
+      { day: 'Sunday', enabled: false, slots: [] },
     ];
 
     for (const doc of doctorUsers) {
@@ -128,7 +138,8 @@ const seedData = async () => {
         consultationFee: doc.fee,
         rating: doc.rating,
         totalRatings: Math.floor(Math.random() * 200) + 50,
-        availableSlots: defaultSlots,
+        weeklySchedule: defaultSchedule,
+        slotDuration: 30,
         isVerified: true,
       });
     }

@@ -1,5 +1,6 @@
 const Appointment = require('../models/Appointment');
 const Doctor = require('../models/Doctor');
+const DoctorPatientLink = require('../models/DoctorPatientLink');
 
 /**
  * @desc    Book a new appointment
@@ -21,6 +22,29 @@ const bookAppointment = async (req, res) => {
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) {
       return res.status(404).json({ success: false, message: 'Doctor not found.' });
+    }
+
+    // Check if date is blocked
+    const isBlocked = doctor.blockedDates?.some(blockedDate => 
+      new Date(blockedDate).toISOString().split('T')[0] === new Date(date).toISOString().split('T')[0]
+    );
+
+    if (isBlocked) {
+      return res.status(400).json({
+        success: false,
+        message: 'Doctor is not available on this date.',
+      });
+    }
+
+    // Check if slot is within weekly schedule
+    const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
+    const daySchedule = doctor.weeklySchedule?.find(s => s.day === dayOfWeek);
+
+    if (!daySchedule || !daySchedule.enabled || !daySchedule.slots?.includes(time)) {
+      return res.status(400).json({
+        success: false,
+        message: 'This time slot is not available.',
+      });
     }
 
     // Check if the slot is already booked
@@ -52,6 +76,13 @@ const bookAppointment = async (req, res) => {
       consultationFee: doctor.consultationFee,
       status: 'confirmed',
     });
+
+    // Upsert DoctorPatientLink
+    await DoctorPatientLink.findOneAndUpdate(
+      { doctor: doctor.user, patient: req.user._id },
+      { $setOnInsert: { status: 'Active' }, $set: { primaryCondition: reason || 'General Checkup' } },
+      { upsert: true, new: true }
+    );
 
     res.status(201).json({
       success: true,
