@@ -66,16 +66,24 @@ const doctorSchema = new mongoose.Schema(
       default: '',
       maxlength: 500,
     },
-    availableSlots: [
+    weeklySchedule: [
       {
         day: {
           type: String,
           enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
         },
-        startTime: String, // e.g. "09:00"
-        endTime: String,   // e.g. "17:00"
+        enabled: {
+          type: Boolean,
+          default: true,
+        },
+        slots: [String], // Array of times like "09:00", "14:30"
       },
     ],
+    slotDuration: {
+      type: Number,
+      default: 30, // in minutes
+    },
+    blockedDates: [Date],
     isVerified: {
       type: Boolean,
       default: false,
