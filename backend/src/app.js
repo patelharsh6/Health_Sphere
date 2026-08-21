@@ -13,6 +13,7 @@ const appointmentRoutes = require('./routes/appointmentRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const medicineRoutes = require('./routes/medicineRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 
@@ -64,6 +65,7 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/medicines', medicineRoutes);
+app.use('/api/admin', adminRoutes);
 
 // ──────────────────────────────────────────────
 // HEALTH CHECK
