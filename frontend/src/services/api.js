@@ -107,8 +107,13 @@ export const patientAPI = {
 export const appointmentAPI = {
   book: (data) => api.post('/appointments', data),
   getMyAppointments: (params) => api.get('/appointments', { params }),
+  getToday: () => api.get('/appointments/today'),
   getById: (id) => api.get(`/appointments/${id}`),
-  cancel: (id) => api.put(`/appointments/${id}/cancel`),
+  cancel: (id, data) => api.put(`/appointments/${id}/cancel`, data),
+  reschedule: (id, data) => api.put(`/appointments/${id}/reschedule`, data),
+  confirm: (id) => api.put(`/appointments/${id}/confirm`),
+  complete: (id, data) => api.put(`/appointments/${id}/complete`, data),
+  getReceipt: (id) => api.get(`/appointments/${id}/receipt`),
 };
 
 // ═══════════════════════════════════════
