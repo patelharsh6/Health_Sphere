@@ -25,6 +25,19 @@ const reportSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    labName: {
+      type: String,
+      default: 'Unknown Lab',
+    },
+    reportDate: {
+      type: Date,
+      default: Date.now,
+    },
+    status: {
+      type: String,
+      enum: ['uploaded', 'processing', 'analyzed', 'failed'],
+      default: 'uploaded',
+    },
     uploadDate: {
       type: Date,
       default: Date.now,
@@ -37,10 +50,21 @@ const reportSchema = new mongoose.Schema(
         enum: ['low', 'moderate', 'high', 'critical', ''],
         default: '',
       },
+      riskScore: {
+        type: Number,
+        default: 0,
+      },
       findings: [
         {
           parameter: String,
           value: String,
+          numericValue: Number,
+          unit: String,
+          trend: {
+            type: String,
+            enum: ['up', 'down', 'stable', ''],
+            default: '',
+          },
           normalRange: String,
           status: {
             type: String,

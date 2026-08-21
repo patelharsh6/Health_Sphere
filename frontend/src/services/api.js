@@ -126,6 +126,10 @@ export const reportAPI = {
     }),
   getMyReports: (params) => api.get('/reports', { params }),
   getById: (id) => api.get(`/reports/${id}`),
+  delete: (id) => api.delete(`/reports/${id}`),
+  reanalyze: (id) => api.post(`/reports/${id}/reanalyze`),
+  getTrends: (id) => api.get(`/reports/${id}/trends`),
+  getFileUrl: (id) => `${API_BASE_URL}/reports/${id}/file`,
 };
 
 // ═══════════════════════════════════════
