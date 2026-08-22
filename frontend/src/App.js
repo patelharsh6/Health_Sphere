@@ -6,6 +6,8 @@ import Footer from './layouts/Footer';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import SymptomChecker from './pages/SymptomChecker';
 import DiseaseDetail from './pages/DiseaseDetail';
 import DiseaseListing from './pages/DiseaseListing';
@@ -44,6 +46,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/symptoms" element={<SymptomChecker />} />
         <Route path="/ai-assistant" element={<AIAssistant />} />
         <Route path="/diseases" element={<DiseaseListing />} />

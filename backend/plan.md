@@ -430,3 +430,33 @@ Phases 2, 3, and 5 are independent of one another and can be built in parallel.
 - Every page in the coverage matrix loads from `/api` with loading, empty, and error states.
 - No endpoint returns another user's medical data; report files are auth-gated.
 - `npm test` passes in `backend/`; `npm run seed` produces a fully populated demo environment.
+
+---
+
+## Post-Phase-7 audit (2026-08-22)
+
+Verified against the running app, not just the code. Corrections to earlier notes:
+
+### Fixed in this pass
+
+1. ✅ **`adminRoutes.js` imported `authorize` from `authMiddleware`**, which only exports `protect` — `TypeError: authorize is not a function` at require time. **The entire server refused to boot.** Now imported from `roleMiddleware`.
+2. ✅ **Phase 6 overwrote `aiController.js` / `aiRoutes.js`**, deleting `symptom-check`, `diseases`, `diseases/categories`, `diseases/:slug` and `diseases/:slug/doctors` — all five still called by the frontend. Recovered from `6032e97` and merged with the chat handlers. `router.use(protect)` was also blanket-gating the public catalog; `protect` is now per-route on the chat endpoints only.
+3. ✅ **All 5 admin pages imported `../../../services/api`** (one level too deep), so `react-scripts build` failed outright — the frontend had not compiled since `0198bb9`. Fixed to `../../services/api`; build now succeeds.
+4. ✅ **`fallbackDiseases` removed** from `DiseaseListing.js` (12 fixtures) and `DiseaseDetail.js` (222 lines). These were masking gap 2 — the pages looked fine while the API 404'd. Both now show real loading / error / empty states, and DiseaseListing sources its category chips from `GET /ai/diseases/categories` instead of a hardcoded list that had drifted from the enum.
+5. ✅ **AI assistant reworked.** Provider is now Gemini (free tier) via `@google/generative-ai`; `@anthropic-ai/sdk` removed along with the retired `claude-3-haiku-20240307` id. Tier 1 is the real catalog-grounded intent router the plan specified — it queries `Disease` and `Medicine`, reuses the symptom-overlap scoring, and returns the `suggestions[]` the contract promised. Tier 2 injects retrieved catalog snippets so Gemini answers from our data, and falls back to Tier 1 on any error (quota, network, safety block). Emergency keywords short-circuit before either tier.
+6. ✅ **`ML_SERVICE_URL` dropped from the plan.** Phase 5.6 assumed a self-built Python microservice, not a third-party API. `labRanges.js` + `riskCalculator.js` already do this in-process; a second deployable is not worth it here.
+7. ✅ **Report parsing made real.** `labRanges.js` grew from 5 parameters to 28, each with the aliases real labs actually print (`Hb`, `Haemoglobin`, `HGB`, `TLC`, `PCV`, `SGPT (ALT)`, …) and sex-specific ranges where they genuinely differ. `reportParser.js` now matches line-by-line and skips the reference-range column — the old regex would read `13.5` out of `Hb 11.2 g/dL 13.5 - 17.5`. Verified: 17 parameters extracted from a realistic panel where the old parser managed 5. Trends are computed against the patient's previous report with a 5% noise threshold, replacing the hardcoded `trend: 'stable'`; with no history the field is left empty rather than claiming stability. The mock fixture text for unsupported formats is gone — it throws honestly. Summary and recommendations are derived from the specific parameters that came back abnormal.
+8. ✅ **`riskCalculator.js` rescored.** The flat `+20` per abnormality broke once extraction improved: 5 mild deviations scored 100 and reported `critical`. Now a weighted proportion of the panel, with a floor so one critical value is not diluted, and a `MIN_PANEL` guard so a scan yielding a single mildly-abnormal value does not score 100.
+9. ✅ **`/forgot-password` and `/reset-password/:token` pages added**, wired into `App.js`, and the dead `<a href="#">Forgot Password?</a>` in `Login.js` now links to them. `ResetPassword.js` mirrors the server's `STRONG_PASSWORD` rule so the user never eats a surprise 400.
+10. ✅ **Env centralised.** `AI_PROVIDER`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `STORAGE_DRIVER` and `CLOUDINARY` are exported from `config/env.js`; nothing outside it reads `process.env` any more. `STORAGE_DRIVER=cloudinary` downgrades to local with a warning when the keys are incomplete, rather than booting a half-configured uploader. `.env.example` is a real placeholder template again — it had been overwritten with live credentials (it is gitignored, and all 89 commits were scanned: no secret was ever committed).
+
+### Corrections to the Phase 0 "Outstanding" note
+
+- **The database is not empty.** It holds 15 diseases, 12 medicines and 6 doctors. **Do not run `npm run seed`** — it still `deleteMany`s users/patients/doctors and would destroy the existing accounts. Seeder v2 remains outstanding.
+- 6 of the 10 `specialistType` values diseases point to have no matching verified doctor (`Endocrinologist`, `Hematologist`, `Psychiatrist`, `Pulmonologist`, `Rheumatologist`, `Urologist`), so `GET /ai/diseases/:slug/doctors` correctly returns `[]` on those pages. This is a data gap, not a bug — it needs an additive doctor seed that does not wipe users.
+
+### Still outstanding
+
+- **Phase 8**: `helmet`, `express-mongo-sanitize`, `hpp`, global rate limiting, `winston`, `ApiError`/`asyncHandler` (61 duplicated try/catch blocks across 8 controllers), swagger at `/api/docs`. `getAllDoctors` still filters and paginates **in memory**, and its search branch returns `count` with no `page`/`pages`.
+- **Phase 9**: no `jest`/`supertest`/`mongodb-memory-server`, no `tests/`, no `npm test`, no `Dockerfile`/`docker-compose`. Seeder v2 (idempotent, `--fresh`, sample appointments and reports) not started.
+- Admin content management has POST + DELETE but no PUT — diseases and medicines can be created and deleted, not edited.

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, ShieldAlert, CheckCircle, XCircle, Trash2 } from 'lucide-react';
-import { adminAPI, assetUrl } from '../../../services/api';
+import { adminAPI, assetUrl } from '../../services/api';
 import './Admin.css';
 
 const AdminUsers = () => {

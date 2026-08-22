@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Trash2, PlusCircle } from 'lucide-react';
-import { adminAPI } from '../../../services/api';
+import { adminAPI } from '../../services/api';
 import './Admin.css';
 
 const AdminContent = () => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, UserPlus, Activity, FileText, CheckCircle, Clock, XCircle, LayoutDashboard } from 'lucide-react';
-import { adminAPI } from '../../../services/api';
+import { adminAPI } from '../../services/api';
 import './Admin.css';
 import { Link } from 'react-router-dom';
 

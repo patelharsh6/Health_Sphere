@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserPlus, CheckCircle, ShieldAlert } from 'lucide-react';
-import { adminAPI } from '../../../services/api';
+import { adminAPI } from '../../services/api';
 import './Admin.css';
 
 const AdminDoctors = () => {
