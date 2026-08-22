@@ -89,4 +89,10 @@ diseaseSchema.pre('insertMany', function (next, docs) {
   next();
 });
 
+// The catalog is queried by slug (detail page) and filtered by category
+// (listing chips). `slug` is already unique; category needs its own index.
+diseaseSchema.index({ category: 1, name: 1 });
+diseaseSchema.index({ specialistType: 1 });
+diseaseSchema.index({ name: 'text', description: 'text' });
+
 module.exports = mongoose.model('Disease', diseaseSchema);

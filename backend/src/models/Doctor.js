@@ -94,4 +94,9 @@ const doctorSchema = new mongoose.Schema(
   }
 );
 
+// getAllDoctors filters on isVerified + specialization and sorts by rating;
+// this covers that access path so the directory does not collection-scan.
+doctorSchema.index({ isVerified: 1, specialization: 1, rating: -1 });
+doctorSchema.index({ hospital: 1 });
+
 module.exports = mongoose.model('Doctor', doctorSchema);

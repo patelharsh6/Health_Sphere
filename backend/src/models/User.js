@@ -118,4 +118,8 @@ userSchema.methods.passwordChangedAfter = function (jwtIssuedAtSeconds) {
 const User = mongoose.model('User', userSchema);
 User.RESET_TOKEN_TTL_MS = RESET_TOKEN_TTL_MS;
 
+// Login looks users up by email (already unique); the admin console lists and
+// filters by role, and the doctor-verification queue filters on role + active.
+userSchema.index({ role: 1, isActive: 1 });
+
 module.exports = User;

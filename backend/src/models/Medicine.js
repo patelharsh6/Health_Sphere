@@ -123,4 +123,8 @@ medicineSchema.pre('insertMany', function (next, docs) {
   next();
 });
 
+// Mirrors the disease catalog: listing filters by category and type.
+medicineSchema.index({ category: 1, name: 1 });
+medicineSchema.index({ isActive: 1, category: 1 });
+
 module.exports = mongoose.model('Medicine', medicineSchema);

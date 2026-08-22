@@ -112,4 +112,8 @@ reportSchema.set('toJSON', {
 });
 reportSchema.set('toObject', { virtuals: true });
 
+// getPendingReviews filters by status; the trends endpoint walks a patient's
+// reports newest-first, which the existing { patient, uploadDate } index covers.
+reportSchema.index({ status: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Report', reportSchema);
