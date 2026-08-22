@@ -82,7 +82,10 @@ const options = {
       { name: 'Admin', description: 'Platform operations. Admin role only.' },
     ],
   },
-  apis: [path.resolve(__dirname, '../routes/*.js')],
+  // glob needs forward slashes. path.resolve returns backslashes on Windows,
+  // which silently matches nothing — the spec builds with zero operations and
+  // no error at all.
+  apis: [path.join(__dirname, '..', 'routes', '*.js').split(path.sep).join('/')],
 };
 
 module.exports = swaggerJsdoc(options);
