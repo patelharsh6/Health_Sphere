@@ -6,6 +6,7 @@ const Appointment = require('../models/Appointment');
 const Report = require('../models/Report');
 const Disease = require('../models/Disease');
 const Medicine = require('../models/Medicine');
+const asyncHandler = require('../utils/asyncHandler');
 
 /**
  * @desc    Get dashboard statistics
@@ -13,44 +14,39 @@ const Medicine = require('../models/Medicine');
  * @access  Private/Admin
  */
 const getStats = async (req, res) => {
-  try {
-    const totalUsers = await User.countDocuments();
-    const totalPatients = await User.countDocuments({ role: 'patient' });
-    const totalDoctors = await User.countDocuments({ role: 'doctor' });
-    const verifiedDoctors = await Doctor.countDocuments({ isVerified: true });
-    
-    const appointmentsByStatus = await Appointment.aggregate([
-      { $group: { _id: '$status', count: { $sum: 1 } } }
-    ]);
+  const totalUsers = await User.countDocuments();
+  const totalPatients = await User.countDocuments({ role: 'patient' });
+  const totalDoctors = await User.countDocuments({ role: 'doctor' });
+  const verifiedDoctors = await Doctor.countDocuments({ isVerified: true });
+  
+  const appointmentsByStatus = await Appointment.aggregate([
+    { $group: { _id: '$status', count: { $sum: 1 } } }
+  ]);
 
-    const totalReports = await Report.countDocuments();
-    const totalDiseases = await Disease.countDocuments();
-    const totalMedicines = await Medicine.countDocuments();
+  const totalReports = await Report.countDocuments();
+  const totalDiseases = await Disease.countDocuments();
+  const totalMedicines = await Medicine.countDocuments();
 
-    res.status(200).json({
-      success: true,
-      data: {
-        users: {
-          total: totalUsers,
-          patients: totalPatients,
-          doctors: totalDoctors,
-          verifiedDoctors: verifiedDoctors
-        },
-        appointments: appointmentsByStatus.reduce((acc, curr) => {
-          acc[curr._id] = curr.count;
-          return acc;
-        }, {}),
-        content: {
-          reports: totalReports,
-          diseases: totalDiseases,
-          medicines: totalMedicines
-        }
+  res.status(200).json({
+    success: true,
+    data: {
+      users: {
+        total: totalUsers,
+        patients: totalPatients,
+        doctors: totalDoctors,
+        verifiedDoctors: verifiedDoctors
+      },
+      appointments: appointmentsByStatus.reduce((acc, curr) => {
+        acc[curr._id] = curr.count;
+        return acc;
+      }, {}),
+      content: {
+        reports: totalReports,
+        diseases: totalDiseases,
+        medicines: totalMedicines
       }
-    });
-  } catch (error) {
-    console.error('Admin Stats Error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+    }
+  });
 };
 
 /**
@@ -59,12 +55,8 @@ const getStats = async (req, res) => {
  * @access  Private/Admin
  */
 const getUsers = async (req, res) => {
-  try {
-    const users = await User.find().select('-password').sort({ createdAt: -1 });
-    res.status(200).json({ success: true, data: users });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  const users = await User.find().select('-password').sort({ createdAt: -1 });
+  res.status(200).json({ success: true, data: users });
 };
 
 /**
@@ -73,26 +65,22 @@ const getUsers = async (req, res) => {
  * @access  Private/Admin
  */
 const updateUserStatus = async (req, res) => {
-  try {
-    const { isActive } = req.body;
-    
-    // Don't let admin deactivate themselves
-    if (req.params.id === req.user._id.toString()) {
-      return res.status(400).json({ success: false, message: 'You cannot deactivate your own account.' });
-    }
-
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-
-    user.isActive = isActive;
-    await user.save();
-
-    res.status(200).json({ success: true, message: `User ${isActive ? 'activated' : 'deactivated'} successfully.` });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+  const { isActive } = req.body;
+  
+  // Don't let admin deactivate themselves
+  if (req.params.id === req.user._id.toString()) {
+    return res.status(400).json({ success: false, message: 'You cannot deactivate your own account.' });
   }
+
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User not found' });
+  }
+
+  user.isActive = isActive;
+  await user.save();
+
+  res.status(200).json({ success: true, message: `User ${isActive ? 'activated' : 'deactivated'} successfully.` });
 };
 
 /**
@@ -101,27 +89,23 @@ const updateUserStatus = async (req, res) => {
  * @access  Private/Admin
  */
 const deleteUser = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+  const user = await User.findById(req.params.id);
+  if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-    if (user.role === 'admin') {
-      return res.status(400).json({ success: false, message: 'Cannot delete admin accounts directly.' });
-    }
-
-    // Delete associated profile
-    if (user.role === 'patient') {
-      await Patient.findOneAndDelete({ user: user._id });
-    } else if (user.role === 'doctor') {
-      await Doctor.findOneAndDelete({ user: user._id });
-    }
-
-    await User.findByIdAndDelete(user._id);
-
-    res.status(200).json({ success: true, message: 'User deleted completely.' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+  if (user.role === 'admin') {
+    return res.status(400).json({ success: false, message: 'Cannot delete admin accounts directly.' });
   }
+
+  // Delete associated profile
+  if (user.role === 'patient') {
+    await Patient.findOneAndDelete({ user: user._id });
+  } else if (user.role === 'doctor') {
+    await Doctor.findOneAndDelete({ user: user._id });
+  }
+
+  await User.findByIdAndDelete(user._id);
+
+  res.status(200).json({ success: true, message: 'User deleted completely.' });
 };
 
 /**
@@ -130,14 +114,10 @@ const deleteUser = async (req, res) => {
  * @access  Private/Admin
  */
 const getPendingDoctors = async (req, res) => {
-  try {
-    const pendingDoctors = await Doctor.find({ isVerified: false })
-      .populate('user', 'fullName email phone')
-      .sort({ createdAt: -1 });
-    res.status(200).json({ success: true, data: pendingDoctors });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  const pendingDoctors = await Doctor.find({ isVerified: false })
+    .populate('user', 'fullName email phone')
+    .sort({ createdAt: -1 });
+  res.status(200).json({ success: true, data: pendingDoctors });
 };
 
 /**
@@ -146,17 +126,13 @@ const getPendingDoctors = async (req, res) => {
  * @access  Private/Admin
  */
 const verifyDoctor = async (req, res) => {
-  try {
-    const doctor = await Doctor.findById(req.params.id);
-    if (!doctor) return res.status(404).json({ success: false, message: 'Doctor not found' });
+  const doctor = await Doctor.findById(req.params.id);
+  if (!doctor) return res.status(404).json({ success: false, message: 'Doctor not found' });
 
-    doctor.isVerified = true;
-    await doctor.save();
+  doctor.isVerified = true;
+  await doctor.save();
 
-    res.status(200).json({ success: true, message: 'Doctor verified successfully.' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  res.status(200).json({ success: true, message: 'Doctor verified successfully.' });
 };
 
 /**
@@ -165,15 +141,11 @@ const verifyDoctor = async (req, res) => {
  * @access  Private/Admin
  */
 const getAppointments = async (req, res) => {
-  try {
-    const appointments = await Appointment.find()
-      .populate('patient', 'fullName')
-      .populate('doctor', 'fullName')
-      .sort({ date: -1, timeSlot: 1 });
-    res.status(200).json({ success: true, data: appointments });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  const appointments = await Appointment.find()
+    .populate('patient', 'fullName')
+    .populate('doctor', 'fullName')
+    .sort({ date: -1, timeSlot: 1 });
+  res.status(200).json({ success: true, data: appointments });
 };
 
 // ------------------------------------------------------------------
@@ -181,71 +153,47 @@ const getAppointments = async (req, res) => {
 // ------------------------------------------------------------------
 
 const getDiseases = async (req, res) => {
-  try {
-    const diseases = await Disease.find().sort({ name: 1 });
-    res.status(200).json({ success: true, data: diseases });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  const diseases = await Disease.find().sort({ name: 1 });
+  res.status(200).json({ success: true, data: diseases });
 };
 
 const deleteDisease = async (req, res) => {
-  try {
-    await Disease.findByIdAndDelete(req.params.id);
-    res.status(200).json({ success: true, message: 'Disease deleted' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  await Disease.findByIdAndDelete(req.params.id);
+  res.status(200).json({ success: true, message: 'Disease deleted' });
 };
 
 const createDisease = async (req, res) => {
-  try {
-    const disease = await Disease.create(req.body);
-    res.status(201).json({ success: true, data: disease });
-  } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
-  }
+  const disease = await Disease.create(req.body);
+  res.status(201).json({ success: true, data: disease });
 };
 
 const getMedicines = async (req, res) => {
-  try {
-    const medicines = await Medicine.find().sort({ name: 1 });
-    res.status(200).json({ success: true, data: medicines });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  const medicines = await Medicine.find().sort({ name: 1 });
+  res.status(200).json({ success: true, data: medicines });
 };
 
 const deleteMedicine = async (req, res) => {
-  try {
-    await Medicine.findByIdAndDelete(req.params.id);
-    res.status(200).json({ success: true, message: 'Medicine deleted' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  await Medicine.findByIdAndDelete(req.params.id);
+  res.status(200).json({ success: true, message: 'Medicine deleted' });
 };
 
 const createMedicine = async (req, res) => {
-  try {
-    const medicine = await Medicine.create(req.body);
-    res.status(201).json({ success: true, data: medicine });
-  } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
-  }
+  const medicine = await Medicine.create(req.body);
+  res.status(201).json({ success: true, data: medicine });
 };
 
 module.exports = {
-  getStats,
-  getUsers,
-  updateUserStatus,
-  deleteUser,
-  getPendingDoctors,
-  verifyDoctor,
-  getAppointments,
-  getDiseases,
-  deleteDisease,
-  createDisease,
-  getMedicines,
-  deleteMedicine,
-  createMedicine
+  getStats: asyncHandler(getStats),
+  getUsers: asyncHandler(getUsers),
+  updateUserStatus: asyncHandler(updateUserStatus),
+  deleteUser: asyncHandler(deleteUser),
+  getPendingDoctors: asyncHandler(getPendingDoctors),
+  verifyDoctor: asyncHandler(verifyDoctor),
+  getAppointments: asyncHandler(getAppointments),
+  getDiseases: asyncHandler(getDiseases),
+  deleteDisease: asyncHandler(deleteDisease),
+  createDisease: asyncHandler(createDisease),
+  getMedicines: asyncHandler(getMedicines),
+  deleteMedicine: asyncHandler(deleteMedicine),
+  createMedicine: asyncHandler(createMedicine),
 };

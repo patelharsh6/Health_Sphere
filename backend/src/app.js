@@ -1,9 +1,17 @@
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const hpp = require('hpp');
+const mongoSanitize = require('express-mongo-sanitize');
 const morgan = require('morgan');
-const multer = require('multer');
+const swaggerUi = require('swagger-ui-express');
+
 const { CLIENT_URL, NODE_ENV } = require('./config/env');
+const logger = require('./config/logger');
+const swaggerSpec = require('./config/swagger');
+const { globalLimiter } = require('./middleware/rateLimit');
+const { requestId, notFound, errorHandler } = require('./middleware/errorHandler');
 
 // Import Routes
 const authRoutes = require('./routes/authRoutes');
@@ -17,14 +25,32 @@ const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 
+// Rate limiters and req.ip must see the real client address, not the proxy's.
+app.set('trust proxy', 1);
+
 // ──────────────────────────────────────────────
-// MIDDLEWARE
+// SECURITY
 // ──────────────────────────────────────────────
 
-// CORS — Allow frontend origin
+app.use(
+  helmet({
+    // The API serves JSON and avatar images, never HTML that embeds scripts,
+    // so the restrictive default CSP would only get in Swagger UI's way.
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
+
+// CORS is locked to the configured client. A bare `cors()` would reflect any
+// Origin, which combined with credentials lets any site call the API as the
+// signed-in user.
 app.use(
   cors({
-    origin: CLIENT_URL,
+    origin: (origin, callback) => {
+      // Same-origin and non-browser callers (curl, health checks) send no Origin.
+      if (!origin || origin === CLIENT_URL) return callback(null, true);
+      return callback(new Error(`Origin ${origin} is not allowed by CORS.`));
+    },
     credentials: true,
   })
 );
@@ -33,10 +59,32 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// HTTP Request Logger (dev only)
-if (NODE_ENV === 'development') {
-  app.use(morgan('dev'));
-}
+// Strip `$`/`.` keys so a body like {"email": {"$gt": ""}} cannot become a
+// query operator. Runs after the body parsers and before any route.
+app.use(mongoSanitize({ replaceWith: '_' }));
+
+// Collapse duplicated query params: `?page=1&page=2` otherwise arrives as an
+// array and breaks parseInt-style parsing.
+app.use(hpp());
+
+app.use(globalLimiter);
+
+// ──────────────────────────────────────────────
+// OBSERVABILITY
+// ──────────────────────────────────────────────
+
+app.use(requestId);
+
+// morgan writes through winston so there is a single log destination.
+morgan.token('id', (req) => req.id);
+app.use(
+  morgan(
+    NODE_ENV === 'production'
+      ? ':id :remote-addr :method :url :status :response-time[0]ms'
+      : ':id :method :url :status :response-time[0]ms',
+    { stream: logger.stream, skip: () => NODE_ENV === 'test' }
+  )
+);
 
 // NOTE: uploads are deliberately NOT served statically — they contain medical
 // reports (PHI). Files are streamed through GET /api/reports/:id/file, which
@@ -68,6 +116,22 @@ app.use('/api/medicines', medicineRoutes);
 app.use('/api/admin', adminRoutes);
 
 // ──────────────────────────────────────────────
+// DOCS
+// ──────────────────────────────────────────────
+
+app.use(
+  '/api/docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    customSiteTitle: 'HealthSphere API',
+    swaggerOptions: { persistAuthorization: true },
+  })
+);
+
+// Raw spec, for generating clients or importing into Postman.
+app.get('/api/docs.json', (req, res) => res.json(swaggerSpec));
+
+// ──────────────────────────────────────────────
 // HEALTH CHECK
 // ──────────────────────────────────────────────
 
@@ -81,42 +145,10 @@ app.get('/api/health', (req, res) => {
 });
 
 // ──────────────────────────────────────────────
-// 404 & ERROR HANDLER
+// 404 & ERROR HANDLER — must stay last
 // ──────────────────────────────────────────────
 
-// 404 — Route not found
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Route not found: ${req.method} ${req.originalUrl}`,
-  });
-});
-
-// Global error handler
-app.use((err, req, res, next) => {
-  // Upload problems are client errors — the limit depends on which endpoint
-  // configured multer (10 MB for reports, 2 MB for avatars), so report the
-  // limit multer itself was given instead of hardcoding one.
-  if (err instanceof multer.MulterError) {
-    const limitMb = req.originalUrl.includes('/avatar') ? 2 : 10;
-    const message =
-      err.code === 'LIMIT_FILE_SIZE'
-        ? `File too large. Maximum size is ${limitMb}MB.`
-        : `Upload failed: ${err.message}.`;
-    return res.status(400).json({ success: false, message });
-  }
-
-  // fileFilter rejections arrive as plain Errors carrying a user-facing message
-  if (/^Only PDF|^Avatar must be/.test(err.message || '')) {
-    return res.status(400).json({ success: false, message: err.message });
-  }
-
-  console.error('🔥 Unhandled Error:', err);
-
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Internal Server Error',
-  });
-});
+app.use(notFound);
+app.use(errorHandler);
 
 module.exports = app;

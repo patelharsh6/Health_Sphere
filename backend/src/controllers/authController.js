@@ -7,6 +7,7 @@ const Doctor = require('../models/Doctor');
 const Admin = require('../models/Admin');
 const { generateToken } = require('../utils/jwt');
 const { NODE_ENV, CLIENT_URL } = require('../config/env');
+const asyncHandler = require('../utils/asyncHandler');
 
 const AVATARS_DIR = path.resolve(__dirname, '../../uploads/avatars');
 fs.mkdirSync(AVATARS_DIR, { recursive: true });
@@ -66,123 +67,106 @@ const loadProfile = async (user) => {
  * @access  Public
  */
 const register = async (req, res) => {
-  try {
-    const {
-      fullName, email, phone, password, role,
-      // Patient fields
-      dob, gender,
-      // Doctor fields
-      medicalLicense, specialization,
-      // Admin fields
-      hospitalId,
-      // Checkboxes
-      termsAccepted, aiDisclaimerAccepted,
-    } = req.body;
+  const {
+    fullName, email, phone, password, role,
+    // Patient fields
+    dob, gender,
+    // Doctor fields
+    medicalLicense, specialization,
+    // Admin fields
+    hospitalId,
+    // Checkboxes
+    termsAccepted, aiDisclaimerAccepted,
+  } = req.body;
 
-    const effectiveRole = role || 'patient';
+  const effectiveRole = role || 'patient';
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'An account with this email already exists.',
-      });
-    }
-
-    // Check if medical license already exists for a doctor
-    if (effectiveRole === 'doctor' && medicalLicense) {
-      const existingLicense = await Doctor.findOne({ medicalLicense });
-      if (existingLicense) {
-        return res.status(400).json({
-          success: false,
-          message: 'A doctor with this medical license is already registered.',
-        });
-      }
-    }
-
-    // Create base user
-    const user = await User.create({
-      fullName,
-      email,
-      phone,
-      password,
-      role: effectiveRole,
-      termsAccepted,
-      aiDisclaimerAccepted,
+  // Check if user already exists
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    return res.status(400).json({
+      success: false,
+      message: 'An account with this email already exists.',
     });
-
-    // Create role-specific profile. If profile creation fails the base user
-    // would otherwise be left orphaned — with an email that can never be
-    // registered again — so roll it back.
-    let profile;
-    try {
-      if (effectiveRole === 'patient') {
-        profile = await Patient.create({
-          user: user._id,
-          dateOfBirth: dob,
-          gender,
-        });
-      } else if (effectiveRole === 'doctor') {
-        profile = await Doctor.create({
-          user: user._id,
-          medicalLicense,
-          specialization,
-          // A doctor may not self-verify: their medical license has to be
-          // checked by an admin (PUT /api/admin/doctors/:id/verify, Phase 7)
-          // before they become bookable. Unverified doctors are already
-          // excluded from GET /api/doctors.
-          isVerified: false,
-          availableSlots: [
-            { day: 'Monday', startTime: '09:00', endTime: '16:00' },
-            { day: 'Tuesday', startTime: '09:00', endTime: '16:00' },
-            { day: 'Wednesday', startTime: '09:00', endTime: '16:00' },
-            { day: 'Thursday', startTime: '09:00', endTime: '16:00' },
-            { day: 'Friday', startTime: '09:00', endTime: '16:00' },
-          ],
-        });
-      } else if (effectiveRole === 'admin') {
-        profile = await Admin.create({
-          user: user._id,
-          hospitalId,
-        });
-      }
-    } catch (profileError) {
-      await User.findByIdAndDelete(user._id);
-      throw profileError;
-    }
-
-    // Generate token
-    const token = generateToken(user);
-
-    res.status(201).json({
-      success: true,
-      message:
-        effectiveRole === 'doctor'
-          ? 'Account created. Your medical license is pending verification by an administrator.'
-          : 'Account created successfully!',
-      data: {
-        token,
-        user: publicUser(user),
-        profile,
-      },
-    });
-  } catch (error) {
-    // Handle Mongoose validation errors
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map((e) => e.message);
-      return res.status(400).json({ success: false, message: messages.join(', ') });
-    }
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern || {})[0] || 'field';
-      return res.status(400).json({
-        success: false,
-        message: `An account with this ${field} already exists.`,
-      });
-    }
-    console.error('Register Error:', error);
-    res.status(500).json({ success: false, message: 'Server error during registration.' });
   }
+
+  // Check if medical license already exists for a doctor
+  if (effectiveRole === 'doctor' && medicalLicense) {
+    const existingLicense = await Doctor.findOne({ medicalLicense });
+    if (existingLicense) {
+      return res.status(400).json({
+        success: false,
+        message: 'A doctor with this medical license is already registered.',
+      });
+    }
+  }
+
+  // Create base user
+  const user = await User.create({
+    fullName,
+    email,
+    phone,
+    password,
+    role: effectiveRole,
+    termsAccepted,
+    aiDisclaimerAccepted,
+  });
+
+  // Create role-specific profile. If profile creation fails the base user
+  // would otherwise be left orphaned — with an email that can never be
+  // registered again — so roll it back.
+  let profile;
+  try {
+    if (effectiveRole === 'patient') {
+      profile = await Patient.create({
+        user: user._id,
+        dateOfBirth: dob,
+        gender,
+      });
+    } else if (effectiveRole === 'doctor') {
+      profile = await Doctor.create({
+        user: user._id,
+        medicalLicense,
+        specialization,
+        // A doctor may not self-verify: their medical license has to be
+        // checked by an admin (PUT /api/admin/doctors/:id/verify, Phase 7)
+        // before they become bookable. Unverified doctors are already
+        // excluded from GET /api/doctors.
+        isVerified: false,
+        availableSlots: [
+          { day: 'Monday', startTime: '09:00', endTime: '16:00' },
+          { day: 'Tuesday', startTime: '09:00', endTime: '16:00' },
+          { day: 'Wednesday', startTime: '09:00', endTime: '16:00' },
+          { day: 'Thursday', startTime: '09:00', endTime: '16:00' },
+          { day: 'Friday', startTime: '09:00', endTime: '16:00' },
+        ],
+      });
+    } else if (effectiveRole === 'admin') {
+      profile = await Admin.create({
+        user: user._id,
+        hospitalId,
+      });
+    }
+  } catch (profileError) {
+    await User.findByIdAndDelete(user._id);
+    throw profileError;
+  }
+
+  // Generate token
+  const token = generateToken(user);
+
+  res.status(201).json({
+    success: true,
+    message:
+      effectiveRole === 'doctor'
+        ? 'Account created. Your medical license is pending verification by an administrator.'
+        : 'Account created successfully!',
+    data: {
+      token,
+      user: publicUser(user),
+      profile,
+    },
+  });
 };
 
 /**
@@ -191,69 +175,64 @@ const register = async (req, res) => {
  * @access  Public
  */
 const login = async (req, res) => {
-  try {
-    const { email, password, role } = req.body;
+  const { email, password, role } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide email and password.',
-      });
-    }
-
-    // Find user and include password for comparison
-    const user = await User.findOne({ email }).select('+password');
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password.',
-      });
-    }
-
-    // Check if role matches (optional: enforce role-based login)
-    if (role && user.role !== role) {
-      return res.status(401).json({
-        success: false,
-        message: `No ${role} account found with this email.`,
-      });
-    }
-
-    // Verify password
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password.',
-      });
-    }
-
-    if (!user.isActive) {
-      return res.status(403).json({
-        success: false,
-        message: 'Account has been deactivated. Contact support.',
-      });
-    }
-
-    // An unverified doctor may still log in — the UI shows a pending state —
-    // so `isVerified` travels with the login response too.
-    const profile = await loadProfile(user);
-
-    // Generate token
-    const token = generateToken(user);
-
-    res.status(200).json({
-      success: true,
-      message: 'Login successful!',
-      data: {
-        token,
-        user: publicUser(user),
-        isVerified: user.role === 'doctor' ? !!profile?.isVerified : true,
-      },
+  if (!email || !password) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide email and password.',
     });
-  } catch (error) {
-    console.error('Login Error:', error);
-    res.status(500).json({ success: false, message: 'Server error during login.' });
   }
+
+  // Find user and include password for comparison
+  const user = await User.findOne({ email }).select('+password');
+  if (!user) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid email or password.',
+    });
+  }
+
+  // Check if role matches (optional: enforce role-based login)
+  if (role && user.role !== role) {
+    return res.status(401).json({
+      success: false,
+      message: `No ${role} account found with this email.`,
+    });
+  }
+
+  // Verify password
+  const isMatch = await user.comparePassword(password);
+  if (!isMatch) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid email or password.',
+    });
+  }
+
+  if (!user.isActive) {
+    return res.status(403).json({
+      success: false,
+      message: 'Account has been deactivated. Contact support.',
+    });
+  }
+
+  // An unverified doctor may still log in — the UI shows a pending state —
+  // so `isVerified` travels with the login response too.
+  const profile = await loadProfile(user);
+
+  // Generate token
+  const token = generateToken(user);
+
+  res.status(200).json({
+    success: true,
+    message: 'Login successful!',
+    data: {
+      token,
+      user: publicUser(user),
+      isVerified: user.role === 'doctor' ? !!profile?.isVerified : true,
+    },
+  });
 };
 
 /**
@@ -262,27 +241,22 @@ const login = async (req, res) => {
  * @access  Private
  */
 const getMe = async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
-    }
-
-    const profile = await loadProfile(user);
-
-    res.status(200).json({
-      success: true,
-      data: {
-        user: publicUser(user),
-        profile,
-        // Non-doctors are trivially "verified" so the UI can gate on one flag.
-        isVerified: user.role === 'doctor' ? !!profile?.isVerified : true,
-      },
-    });
-  } catch (error) {
-    console.error('GetMe Error:', error);
-    res.status(500).json({ success: false, message: 'Server error.' });
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User not found.' });
   }
+
+  const profile = await loadProfile(user);
+
+  res.status(200).json({
+    success: true,
+    data: {
+      user: publicUser(user),
+      profile,
+      // Non-doctors are trivially "verified" so the UI can gate on one flag.
+      isVerified: user.role === 'doctor' ? !!profile?.isVerified : true,
+    },
+  });
 };
 
 /**
@@ -291,44 +265,35 @@ const getMe = async (req, res) => {
  * @access  Private
  */
 const changePassword = async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
+  const { currentPassword, newPassword } = req.body;
 
-    const user = await User.findById(req.user._id).select('+password');
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
-    }
-
-    const isMatch = await user.comparePassword(currentPassword);
-    if (!isMatch) {
-      // 403, not 401 — a 401 would make the axios interceptor drop the token
-      // and bounce a legitimately logged-in user to /login.
-      return res.status(403).json({
-        success: false,
-        message: 'Your current password is incorrect.',
-      });
-    }
-
-    user.password = newPassword;
-    await user.save();
-
-    // The old token is now invalid (passwordChangedAt), so hand back a fresh one
-    // to keep the user signed in on this device.
-    const token = generateToken(user);
-
-    res.status(200).json({
-      success: true,
-      message: 'Password changed successfully.',
-      data: { token },
-    });
-  } catch (error) {
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map((e) => e.message);
-      return res.status(400).json({ success: false, message: messages.join(', ') });
-    }
-    console.error('ChangePassword Error:', error);
-    res.status(500).json({ success: false, message: 'Server error.' });
+  const user = await User.findById(req.user._id).select('+password');
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'User not found.' });
   }
+
+  const isMatch = await user.comparePassword(currentPassword);
+  if (!isMatch) {
+    // 403, not 401 — a 401 would make the axios interceptor drop the token
+    // and bounce a legitimately logged-in user to /login.
+    return res.status(403).json({
+      success: false,
+      message: 'Your current password is incorrect.',
+    });
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  // The old token is now invalid (passwordChangedAt), so hand back a fresh one
+  // to keep the user signed in on this device.
+  const token = generateToken(user);
+
+  res.status(200).json({
+    success: true,
+    message: 'Password changed successfully.',
+    data: { token },
+  });
 };
 
 /**
@@ -337,49 +302,44 @@ const changePassword = async (req, res) => {
  * @access  Public
  */
 const forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
+  const { email } = req.body;
 
-    const user = await User.findOne({ email });
+  const user = await User.findOne({ email });
 
-    // Always answer identically — a different response for a missing account
-    // would turn this endpoint into an email-enumeration oracle.
-    const genericResponse = {
-      success: true,
-      message: 'If an account exists for that email, a password reset link has been sent.',
-    };
+  // Always answer identically — a different response for a missing account
+  // would turn this endpoint into an email-enumeration oracle.
+  const genericResponse = {
+    success: true,
+    message: 'If an account exists for that email, a password reset link has been sent.',
+  };
 
-    if (!user || !user.isActive) {
-      return res.status(200).json(genericResponse);
-    }
-
-    const rawToken = user.createPasswordResetToken();
-    await user.save({ validateBeforeSave: false });
-
-    const resetUrl = `${CLIENT_URL}/reset-password/${rawToken}`;
-
-    // Mail delivery lands in Phase 8 (nodemailer). Until then the link is
-    // logged server-side, and returned in the response outside production so
-    // the flow is testable end to end without an SMTP account.
-    console.log(`🔑 Password reset link for ${user.email}: ${resetUrl}`);
-
-    if (NODE_ENV === 'production') {
-      return res.status(200).json(genericResponse);
-    }
-
-    res.status(200).json({
-      ...genericResponse,
-      data: {
-        // Development only — never sent in production.
-        resetToken: rawToken,
-        resetUrl,
-        expiresInMinutes: Math.round(User.RESET_TOKEN_TTL_MS / 60000),
-      },
-    });
-  } catch (error) {
-    console.error('ForgotPassword Error:', error);
-    res.status(500).json({ success: false, message: 'Server error.' });
+  if (!user || !user.isActive) {
+    return res.status(200).json(genericResponse);
   }
+
+  const rawToken = user.createPasswordResetToken();
+  await user.save({ validateBeforeSave: false });
+
+  const resetUrl = `${CLIENT_URL}/reset-password/${rawToken}`;
+
+  // Mail delivery lands in Phase 8 (nodemailer). Until then the link is
+  // logged server-side, and returned in the response outside production so
+  // the flow is testable end to end without an SMTP account.
+  console.log(`🔑 Password reset link for ${user.email}: ${resetUrl}`);
+
+  if (NODE_ENV === 'production') {
+    return res.status(200).json(genericResponse);
+  }
+
+  res.status(200).json({
+    ...genericResponse,
+    data: {
+      // Development only — never sent in production.
+      resetToken: rawToken,
+      resetUrl,
+      expiresInMinutes: Math.round(User.RESET_TOKEN_TTL_MS / 60000),
+    },
+  });
 };
 
 /**
@@ -388,42 +348,33 @@ const forgotPassword = async (req, res) => {
  * @access  Public
  */
 const resetPassword = async (req, res) => {
-  try {
-    const { password } = req.body;
+  const { password } = req.body;
 
-    const user = await User.findOne({
-      resetPasswordToken: User.hashResetToken(req.params.token),
-      resetPasswordExpire: { $gt: new Date() },
-    }).select('+password +resetPasswordToken +resetPasswordExpire');
+  const user = await User.findOne({
+    resetPasswordToken: User.hashResetToken(req.params.token),
+    resetPasswordExpire: { $gt: new Date() },
+  }).select('+password +resetPasswordToken +resetPasswordExpire');
 
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: 'This password reset link is invalid or has expired.',
-      });
-    }
-
-    user.password = password;
-    // Single use: burn the token whether or not the user logs in next.
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
-    await user.save();
-
-    const token = generateToken(user);
-
-    res.status(200).json({
-      success: true,
-      message: 'Password reset successfully. You are now signed in.',
-      data: { token, user: publicUser(user) },
+  if (!user) {
+    return res.status(400).json({
+      success: false,
+      message: 'This password reset link is invalid or has expired.',
     });
-  } catch (error) {
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map((e) => e.message);
-      return res.status(400).json({ success: false, message: messages.join(', ') });
-    }
-    console.error('ResetPassword Error:', error);
-    res.status(500).json({ success: false, message: 'Server error.' });
   }
+
+  user.password = password;
+  // Single use: burn the token whether or not the user logs in next.
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpire = undefined;
+  await user.save();
+
+  const token = generateToken(user);
+
+  res.status(200).json({
+    success: true,
+    message: 'Password reset successfully. You are now signed in.',
+    data: { token, user: publicUser(user) },
+  });
 };
 
 /**
@@ -446,49 +397,46 @@ const logout = async (req, res) => {
  * @access  Private
  */
 const uploadAvatar = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Please select an image to upload.' });
-    }
-
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      fs.promises.unlink(req.file.path).catch(() => {});
-      return res.status(404).json({ success: false, message: 'User not found.' });
-    }
-
-    const previousAvatar = user.avatar;
-    user.avatar = avatarUrlFor(req.file.filename);
-    await user.save({ validateBeforeSave: false });
-
-    // Drop the replaced file so uploads/avatars does not grow without bound.
-    if (previousAvatar && previousAvatar.startsWith('/uploads/avatars/')) {
-      const oldPath = path.join(AVATARS_DIR, path.basename(previousAvatar));
-      if (oldPath.startsWith(AVATARS_DIR)) {
-        fs.promises.unlink(oldPath).catch(() => {});
-      }
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Avatar updated successfully.',
-      data: { avatar: user.avatar },
-    });
-  } catch (error) {
-    console.error('UploadAvatar Error:', error);
-    res.status(500).json({ success: false, message: 'Server error.' });
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'Please select an image to upload.' });
   }
+
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    fs.promises.unlink(req.file.path).catch(() => {});
+    return res.status(404).json({ success: false, message: 'User not found.' });
+  }
+
+  const previousAvatar = user.avatar;
+  user.avatar = avatarUrlFor(req.file.filename);
+  await user.save({ validateBeforeSave: false });
+
+  // Drop the replaced file so uploads/avatars does not grow without bound.
+  if (previousAvatar && previousAvatar.startsWith('/uploads/avatars/')) {
+    const oldPath = path.join(AVATARS_DIR, path.basename(previousAvatar));
+    if (oldPath.startsWith(AVATARS_DIR)) {
+      fs.promises.unlink(oldPath).catch(() => {});
+    }
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Avatar updated successfully.',
+    data: { avatar: user.avatar },
+  });
 };
 
 module.exports = {
-  register,
-  login,
-  getMe,
-  changePassword,
-  forgotPassword,
-  resetPassword,
-  logout,
+  register: asyncHandler(register),
+  login: asyncHandler(login),
+  getMe: asyncHandler(getMe),
+  changePassword: asyncHandler(changePassword),
+  forgotPassword: asyncHandler(forgotPassword),
+  resetPassword: asyncHandler(resetPassword),
+  logout: asyncHandler(logout),
+  // multer instance, not a handler — must not be wrapped.
   avatarUpload,
-  uploadAvatar,
+  uploadAvatar: asyncHandler(uploadAvatar),
+  // plain path string, not a handler.
   AVATARS_DIR,
 };
