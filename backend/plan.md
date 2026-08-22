@@ -460,3 +460,121 @@ Verified against the running app, not just the code. Corrections to earlier note
 - **Phase 8**: `helmet`, `express-mongo-sanitize`, `hpp`, global rate limiting, `winston`, `ApiError`/`asyncHandler` (61 duplicated try/catch blocks across 8 controllers), swagger at `/api/docs`. `getAllDoctors` still filters and paginates **in memory**, and its search branch returns `count` with no `page`/`pages`.
 - **Phase 9**: no `jest`/`supertest`/`mongodb-memory-server`, no `tests/`, no `npm test`, no `Dockerfile`/`docker-compose`. Seeder v2 (idempotent, `--fresh`, sample appointments and reports) not started.
 - Admin content management has POST + DELETE but no PUT — diseases and medicines can be created and deleted, not edited.
+
+---
+
+## Phases 8 & 9 (2026-08-22)
+
+Both phases are now complete. `npm test` passes: **120 tests across 6 suites**,
+all against an in-memory MongoDB, so the suite never touches a real database.
+
+### Phase 8 — Hardening
+
+1. Security middleware in `app.js`: `helmet`, `express-mongo-sanitize`
+   (`$`/`.` keys stripped, so `{"email": {"$gt": ""}}` can no longer be an auth
+   bypass), `hpp` (a duplicated `?page=1&page=2` no longer arrives as an array),
+   and a global rate limiter (600/15min in production, skipped under test).
+   **CORS is now an allowlist** — the previous `cors({ origin: CLIENT_URL })`
+   plus `credentials: true` is fine, but an unrecognised Origin is now rejected
+   outright rather than reflected.
+2. `utils/ApiError.js` + `utils/asyncHandler.js` + `middleware/errorHandler.js`.
+   **61 duplicated try/catch blocks across 8 controllers are gone**; the 3 that
+   remain do real work (the `register()` rollback, and two domain-specific 409s
+   for double-booking). Mongoose `ValidationError` → 400 with field-level
+   `errors`, `CastError` → 400, duplicate key → 409, JWT errors → 401. Handlers
+   are wrapped at the export site, so a rejected promise can no longer hang a
+   request. `ApiError.forbidden()` exists to keep authorization failures at 403,
+   since the client signs the user out on any 401.
+3. `config/logger.js` — winston with rotating file transports plus a coloured
+   console, morgan piped through it, and an `X-Request-Id` on every response
+   (echoing the caller's if supplied) tying a response to its log lines.
+4. Route protection audit: `/api/ai/symptom-check` is public but now
+   rate-limited separately (60/15min in production); chat stays at 30/hour.
+5. Indexes added for the real access paths: `Doctor {isVerified, specialization,
+   rating}`, `Disease {category, name}` + `{specialistType}` + text,
+   `Medicine {category, name}` + `{isActive, category}`, `User {role, isActive}`,
+   `Report {status, createdAt}`.
+6. **`getAllDoctors` rewritten as a `$lookup` + `$facet` aggregation.** It used
+   to load every verified doctor and filter in memory, and its search branch
+   returned `count` with no `page`/`pages` — the client pager silently broke on
+   any search. It also crashed on `doc.user.fullName` when a doctor's User had
+   been deleted; the `$unwind` now skips those. Search input is regex-escaped,
+   so `?search=.*` matches nothing instead of everything.
+7. `utils/paginate.js` — one contract (`parsePagination` + `paginated`) so
+   `count`/`page`/`pages` are always present, and a nonsense `?page=-1&limit=abc`
+   is clamped rather than producing an unbounded query.
+8. Swagger at `/api/docs` (UI) and `/api/docs.json` (raw spec): **61 operations
+   across all 8 tags**, annotated next to the routes they describe.
+   Two traps worth remembering — `swagger-jsdoc`'s `apis` glob needs forward
+   slashes (`path.resolve` on Windows yields backslashes and the spec builds
+   with **zero** operations and no error), and a `description` containing `": "`
+   must be quoted or the whole file is dropped with a YAMLSemanticError.
+
+**Not done:** nodemailer. Phase 8 listed it as optional, it needs SMTP
+credentials that do not exist here, and the reset flow already works end to end
+through the UI (the link is logged server-side and returned in the response
+outside production).
+
+### Phase 9 — Testing, seeding, deployment
+
+1. **120 tests, 6 suites** (`jest` + `supertest` + `mongodb-memory-server`):
+   - `auth.test.js` (20) — registration incl. the profile-creation rollback,
+     login, token handling, the reset cycle, role guards
+   - `appointments.test.js` (17) — booking rules, sequential *and concurrent*
+     double-booking, slot release on cancel, authorization
+   - `reports.test.js` (14) — PHI access control across owner / treating doctor /
+     stranger / admin, file streaming, deletion, uploads not served statically
+   - `catalog.test.js` (28) — diseases, medicines, symptom checker, and the
+     pagination contract on both list and search branches
+   - `security.test.js` (15) — headers, CORS, NoSQL injection, HPP, error envelope
+   - `parser.test.js` (26) — lab extraction, aliases, sex-aware ranges, trends,
+     risk scoring
+2. **Seeder v2** — idempotent by default (upserts by email/slug, never deletes,
+   never resets an existing password), with `--fresh` for a clean wipe and
+   `--help` for usage. Verified idempotent: a second run changes no counts, and
+   `--fresh` reproduces the dataset exactly. Now seeds 1 admin, 5 patients,
+   13 doctors, 15 diseases, 12 medicines, 8 appointments (past and future) and
+   4 analysed reports — including two lipid panels for one patient so the trends
+   endpoint has history. **It also closes the specialist gap**: every
+   `specialistType` the disease catalog references now has a verified doctor, so
+   the "find a specialist" CTA is never a dead end, and the seeder warns if that
+   stops being true.
+3. **Env matrix** documented in `backend/README.md` — every key, whether it is
+   required, its default, and its failure mode. `.env` and `.env.example` are
+   both git-ignored; all 89 commits were scanned and no secret was ever
+   committed. `logs/` and `coverage/` added to `.gitignore`.
+4. **Deployment** — `backend/Dockerfile` (multi-stage, `npm ci --omit=dev`,
+   non-root `node` user, `dumb-init` as PID 1 so `docker stop` is a clean
+   SIGTERM, healthcheck reusing `/api/health`), `.dockerignore`, and a root
+   `docker-compose.yml` (api + mongo, named volumes for uploads/logs/db,
+   `depends_on: service_healthy`, secrets read from `backend/.env`).
+   `docker compose config` validates. **The image build is unverified** —
+   Docker Desktop was not running on this machine.
+
+### Bug found and fixed while writing the tests
+
+**Unverified doctors were bookable.** `GET /api/doctors` hides them, but
+`POST /api/appointments` never checked `isVerified`, so anyone holding a Doctor
+profile id could book a doctor whose medical license had never been approved —
+defeating the whole Phase 1 verification gate. `bookAppointment` now returns 403
+for an unverified doctor, and `appointments.test.js` covers it.
+
+### Non-bugs confirmed while testing
+
+- **`passwordChangedAt` has a bounded ≤1s window.** It is deliberately backdated
+  one second so the token a password change hands back stays valid, and JWT
+  `iat` only has second granularity. A token issued in the *same second* as the
+  change still passes; anything older is correctly rejected. Verified across
+  0/1/2/5/60s offsets. Documented rather than changed — closing it properly
+  needs a token version or `jti` counter, not a smaller backdate.
+- `register()` returns `publicUser()`, which deliberately omits `isVerified`.
+  Only `login` and `getMe` surface that flag; the UI gates on those.
+
+### Still outstanding
+
+- **Admin content management has no PUT** — diseases and medicines can be
+  created and deleted, not edited. `adminAPI` in the frontend matches, so this
+  is a genuine feature gap rather than a wiring bug.
+- Frontend has no tests (the 120 above are all backend).
+- `nodemailer` (see above).
+- The Docker image build has not been executed.

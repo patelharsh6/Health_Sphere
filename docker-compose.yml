@@ -1,0 +1,68 @@
+# Local/self-hosted stack: the API plus its own MongoDB.
+#
+#   docker compose up --build          start
+#   docker compose exec api npm run seed -- --fresh   seed the container's DB
+#   docker compose down                stop (data survives in the volumes)
+#   docker compose down -v             stop and delete the data
+#
+# Secrets come from backend/.env, which is git-ignored. Nothing here hardcodes
+# a credential, so this file is safe to commit.
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    environment:
+      # Compose substitutes these from backend/.env; the defaults are only for
+      # a throwaway local stack.
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-healthsphere}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-localdevonly}
+      MONGO_INITDB_DATABASE: healthsphere
+    volumes:
+      - mongo-data:/data/db
+    # Not published to the host by default: only the api service needs it.
+    # Uncomment to inspect with a GUI client.
+    # ports:
+    #   - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  api:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        # Wait for a database that actually answers, not just a started container.
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGO_URI: mongodb://${MONGO_USER:-healthsphere}:${MONGO_PASSWORD:-localdevonly}@mongo:27017/healthsphere?authSource=admin
+      # Required in production — the server refuses to boot without it.
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in backend/.env}
+      JWT_EXPIRE: ${JWT_EXPIRE:-7d}
+      CLIENT_URL: ${CLIENT_URL:-http://localhost:3000}
+      AI_PROVIDER: ${AI_PROVIDER:-rules}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+    ports:
+      - "${PORT:-5000}:5000"
+    volumes:
+      # Uploaded reports must outlive the container. With STORAGE_DRIVER=local
+      # this volume IS the report store — losing it loses the files.
+      - uploads:/app/uploads
+      - logs:/app/logs
+
+volumes:
+  mongo-data:
+  uploads:
+  logs:

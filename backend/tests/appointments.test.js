@@ -106,7 +106,10 @@ describe('Double-booking', () => {
 
     const created = [a, b].filter((r) => r.status === 201).length;
     expect(created).toBe(1);
-    expect(await Appointment.countDocuments({ doctor: doctor.user._id, date, time: '09:00' })).toBe(1);
+    // Count by doctor + time only: the controller stores new Date('YYYY-MM-DD'),
+    // i.e. UTC midnight, which is not the same instant as the local-noon Date
+    // the fixture built. The DB is wiped per test, so this is unambiguous.
+    expect(await Appointment.countDocuments({ doctor: doctor.user._id, time: '09:00' })).toBe(1);
   });
 
   it('frees the slot again once an appointment is cancelled', async () => {
