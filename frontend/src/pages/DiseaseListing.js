@@ -8,26 +8,6 @@ import { Link } from 'react-router-dom';
 import { aiAPI } from '../services/api';
 import './DiseaseListing.css';
 
-// Fallback disease data when API is not available
-const fallbackDiseases = [
-  { _id: '1', name: 'Diabetes', slug: 'diabetes', category: 'Endocrine', severity: 'Chronic', description: 'A metabolic disease that causes high blood sugar levels over a prolonged period.', symptoms: ['Increased thirst', 'Frequent urination', 'Extreme hunger', 'Fatigue'] },
-  { _id: '2', name: 'Hypertension', slug: 'hypertension', category: 'Cardiovascular', severity: 'Chronic', description: 'Long-term force of blood against artery walls, potentially causing health issues.', symptoms: ['Headaches', 'Shortness of breath', 'Nosebleeds', 'Dizziness'] },
-  { _id: '3', name: 'Asthma', slug: 'asthma', category: 'Respiratory', severity: 'Chronic', description: 'A condition where airways narrow and swell, producing extra mucus.', symptoms: ['Shortness of breath', 'Chest tightness', 'Wheezing', 'Coughing'] },
-  { _id: '4', name: 'Migraine', slug: 'migraine', category: 'Neurological', severity: 'Moderate', description: 'A type of headache with intense, debilitating pain often accompanied by nausea.', symptoms: ['Throbbing headache', 'Nausea', 'Light sensitivity', 'Aura'] },
-  { _id: '5', name: 'Arthritis', slug: 'arthritis', category: 'Musculoskeletal', severity: 'Chronic', description: 'Swelling and tenderness of joints, common with aging but treatable.', symptoms: ['Joint pain', 'Stiffness', 'Swelling', 'Decreased range of motion'] },
-  { _id: '6', name: 'COVID-19', slug: 'covid-19', category: 'Infectious', severity: 'Variable', description: 'Infectious disease caused by the SARS-CoV-2 virus affecting respiratory system.', symptoms: ['Fever', 'Dry cough', 'Fatigue', 'Loss of taste or smell'] },
-  { _id: '7', name: 'Depression', slug: 'depression', category: 'Mental Health', severity: 'Moderate', description: 'A mood disorder causing persistent feelings of sadness and loss of interest.', symptoms: ['Persistent sadness', 'Loss of interest', 'Fatigue', 'Difficulty concentrating'] },
-  { _id: '8', name: 'Anemia', slug: 'anemia', category: 'Hematological', severity: 'Mild', description: 'A condition where blood lacks adequate healthy red blood cells.', symptoms: ['Fatigue', 'Weakness', 'Pale skin', 'Shortness of breath'] },
-  { _id: '9', name: 'Pneumonia', slug: 'pneumonia', category: 'Respiratory', severity: 'Severe', description: 'An infection that inflames air sacs in one or both lungs, filling with fluid.', symptoms: ['Chest pain', 'Cough', 'Fever', 'Difficulty breathing'] },
-  { _id: '10', name: 'Alzheimer\'s Disease', slug: 'alzheimers', category: 'Neurological', severity: 'Severe', description: 'A progressive neurological disorder causing brain cells to degenerate.', symptoms: ['Memory loss', 'Confusion', 'Difficulty with routine tasks', 'Mood changes'] },
-  { _id: '11', name: 'Kidney Stones', slug: 'kidney-stones', category: 'Urological', severity: 'Moderate', description: 'Hard deposits of minerals and salts that form inside your kidneys.', symptoms: ['Severe pain', 'Blood in urine', 'Nausea', 'Frequent urination'] },
-  { _id: '12', name: 'Thyroid Disorder', slug: 'thyroid-disorder', category: 'Endocrine', severity: 'Chronic', description: 'Conditions affecting the thyroid gland, impacting metabolism.', symptoms: ['Weight changes', 'Fatigue', 'Temperature sensitivity', 'Mood changes'] },
-];
-
-const categories = [
-  'All', 'Cardiovascular', 'Respiratory', 'Neurological', 'Endocrine',
-  'Musculoskeletal', 'Infectious', 'Mental Health', 'Hematological', 'Urological'
-];
 
 const getCategoryIcon = (category) => {
   switch (category) {
@@ -52,27 +32,44 @@ const getSeverityColor = (severity) => {
 
 const DiseaseListing = () => {
   const [diseases, setDiseases] = useState([]);
+  const [categories, setCategories] = useState(['All']);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
   useEffect(() => {
     fetchDiseases();
+    fetchCategories();
   }, []);
 
   const fetchDiseases = async () => {
+    setLoading(true);
+    setError('');
     try {
       const res = await aiAPI.getAllDiseases();
-      if (res.data.success && res.data.data?.length > 0) {
-        setDiseases(res.data.data);
-      } else {
-        setDiseases(fallbackDiseases);
-      }
-    } catch (error) {
-      console.log('Using fallback disease data');
-      setDiseases(fallbackDiseases);
+      setDiseases(res.data.success ? res.data.data || [] : []);
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          'Could not load the medical database. Please check your connection and try again.'
+      );
+      setDiseases([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Chips are driven by what is actually in the database, so they can never
+  // drift from the Disease.category enum.
+  const fetchCategories = async () => {
+    try {
+      const res = await aiAPI.getDiseaseCategories();
+      if (res.data.success && res.data.data?.length) {
+        setCategories(['All', ...res.data.data.sort()]);
+      }
+    } catch {
+      // Non-fatal: the list still renders, just without category filtering.
     }
   };
 
@@ -139,6 +136,13 @@ const DiseaseListing = () => {
             <div className="dl-loading">
               <Loader size={40} className="spinning" />
               <p>Loading medical database...</p>
+            </div>
+          ) : error ? (
+            <div className="dl-empty">
+              <AlertCircle size={48} />
+              <h3>Unable to load conditions</h3>
+              <p>{error}</p>
+              <button className="dl-retry-btn" onClick={fetchDiseases}>Try again</button>
             </div>
           ) : filteredDiseases.length === 0 ? (
             <div className="dl-empty">

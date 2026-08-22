@@ -1,14 +1,17 @@
 const Report = require('../models/Report');
+const Patient = require('../models/Patient');
 const { parseReport } = require('../utils/reportParser');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+const { STORAGE_DRIVER } = require('../config/env');
+
 const UPLOADS_DIR = path.resolve(__dirname, '../../uploads');
 
 // Multer config for file uploads
-const storage = process.env.STORAGE_DRIVER === 'cloudinary' 
-  ? require('../config/cloudinary').storage 
+const storage = STORAGE_DRIVER === 'cloudinary'
+  ? require('../config/cloudinary').storage
   : multer.diskStorage({
       destination: (req, file, cb) => {
         cb(null, UPLOADS_DIR);
@@ -33,6 +36,29 @@ const upload = multer({
   fileFilter,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
 });
+
+/**
+ * Reference ranges are sex-specific for several parameters, and trends need the
+ * previous report's numbers. Both are looked up here so uploadReport and
+ * reanalyzeReport stay in sync.
+ */
+const buildParseContext = async (patientId, excludeReportId) => {
+  const [profile, previous] = await Promise.all([
+    Patient.findOne({ user: patientId }).select('gender'),
+    Report.findOne({
+      patient: patientId,
+      ...(excludeReportId ? { _id: { $ne: excludeReportId } } : {}),
+      'aiAnalysis.findings.0': { $exists: true },
+    })
+      .sort({ createdAt: -1 })
+      .select('aiAnalysis.findings'),
+  ]);
+
+  return {
+    sex: profile?.gender,
+    previousFindings: previous?.aiAnalysis?.findings || [],
+  };
+};
 
 /**
  * @desc    Upload a medical report
@@ -68,7 +94,9 @@ const uploadReport = async (req, res) => {
     });
 
     // Run AI analysis asynchronously
-    parseReport(req.file.path, type || 'other', req.file.mimetype)
+    const parseContext = await buildParseContext(req.user._id, report._id);
+
+    parseReport(req.file.path, type || 'other', req.file.mimetype, parseContext)
       .then(async (analysis) => {
         report.aiAnalysis = {
           ...analysis,
@@ -285,7 +313,9 @@ const reanalyzeReport = async (req, res) => {
 
     res.status(200).json({ success: true, message: 'Re-analysis started.', data: report });
 
-    parseReport(report.filePath, report.type, '')
+    const reparseContext = await buildParseContext(report.patient, report._id);
+
+    parseReport(report.filePath, report.type, '', reparseContext)
       .then(async (analysis) => {
         report.aiAnalysis = {
           ...analysis,

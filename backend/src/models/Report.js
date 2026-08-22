@@ -73,6 +73,9 @@ const reportSchema = new mongoose.Schema(
         },
       ],
       recommendations: [{ type: String }],
+      // Lets the UI tell "nothing was abnormal" apart from "nothing was
+      // readable" — 0 means extraction found no recognisable lab values.
+      parametersFound: { type: Number, default: 0 },
       analyzedAt: Date,
     },
     // Doctor's review

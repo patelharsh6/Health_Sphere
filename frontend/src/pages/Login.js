@@ -171,7 +171,7 @@ const Login = () => {
                 <span className="checkmark"></span>
                 Remember me
               </label>
-              <a href="#" className="forgot-link">Forgot Password?</a>
+              <Link to="/forgot-password" className="forgot-link">Forgot Password?</Link>
             </div>
 
             {error && <div className="error-message">{error}</div>}
