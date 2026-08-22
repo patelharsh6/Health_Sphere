@@ -1,14 +1,10 @@
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const dotenv = require('dotenv');
+const { CLOUDINARY } = require('./env');
 
-dotenv.config();
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'demo',
-  api_key: process.env.CLOUDINARY_API_KEY || 'demo_key',
-  api_secret: process.env.CLOUDINARY_API_SECRET || 'demo_secret',
-});
+// env.js already loaded .env and downgraded STORAGE_DRIVER to 'local' if these
+// are incomplete, so reaching here means all three keys are present.
+cloudinary.config(CLOUDINARY);
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
