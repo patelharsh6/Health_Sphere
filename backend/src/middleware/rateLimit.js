@@ -34,4 +34,20 @@ const credentialsLimiter = limiter({
   message: 'Too many attempts. Please try again in 15 minutes.',
 });
 
-module.exports = { authLimiter, credentialsLimiter };
+/**
+ * Global backstop across the whole API. Deliberately generous — it exists to
+ * blunt scraping and runaway clients, not to shape normal traffic, which the
+ * per-route limiters above already do. Skipped entirely under test so the
+ * suite cannot exhaust it.
+ */
+const globalLimiter = rateLimit({
+  windowMs: WINDOW_MS,
+  limit: NODE_ENV === 'production' ? 600 : 6000,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  skip: () => NODE_ENV === 'test',
+  handler: envelope('Too many requests. Please slow down and try again shortly.'),
+});
+
+module.exports = { authLimiter, credentialsLimiter, globalLimiter };
+
