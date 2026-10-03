@@ -41,14 +41,23 @@ app.use(
   })
 );
 
-// CORS is locked to the configured client. A bare `cors()` would reflect any
-// Origin, which combined with credentials lets any site call the API as the
-// signed-in user.
+// CORS configuration supporting comma-separated CLIENT_URL or any vercel.app preview/production domain
+const allowedOrigins = CLIENT_URL
+  ? CLIENT_URL.split(',').map((url) => url.trim())
+  : ['http://localhost:3000'];
+
 app.use(
   cors({
     origin: (origin, callback) => {
       // Same-origin and non-browser callers (curl, health checks) send no Origin.
-      if (!origin || origin === CLIENT_URL) return callback(null, true);
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.vercel.app') ||
+        (NODE_ENV !== 'production' && origin.includes('localhost'))
+      ) {
+        return callback(null, true);
+      }
       return callback(new Error(`Origin ${origin} is not allowed by CORS.`));
     },
     credentials: true,
