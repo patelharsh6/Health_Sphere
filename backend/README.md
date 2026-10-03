@@ -48,7 +48,7 @@ listed below; the code reads them **only** through `src/config/env.js`.
 | `CLIENT_URL` | no | `http://localhost:3000` | The **only** allowed CORS origin, and the base for password-reset links |
 | `AI_PROVIDER` | no | `rules` | `rules` = catalog-grounded engine only (no key, no quota). `gemini` = Gemini overlay, falling back to `rules` on any error |
 | `GEMINI_API_KEY` | only if `AI_PROVIDER=gemini` | - | Free key, no card: <https://aistudio.google.com/apikey>. Warns at boot if the provider is `gemini` but this is empty |
-| `GEMINI_MODEL` | no | `gemini-2.5-flash` | Override if Google renames the free-tier model |
+| `GEMINI_MODEL` | no | `gemini-3.6-flash` | Tried first; on failure `aiEngine.js` falls back to `gemini-3.6-flash`, then `gemini-1.5-flash`, then the rules engine |
 | `STORAGE_DRIVER` | no | `local` | `local` writes to `backend/uploads/`. `cloudinary` needs all three keys below and **silently downgrades to `local`** with a warning if any is missing |
 | `CLOUDINARY_CLOUD_NAME` | only if cloudinary | - | |
 | `CLOUDINARY_API_KEY` | only if cloudinary | - | |
@@ -99,7 +99,8 @@ prints a warning if that ever stops being true.
 ### Tests
 
 ```bash
-npm test              # full suite
+npm test              # full suite — 120 tests, 6 suites
+npm run test:watch    # watch mode
 npm run test:coverage # with coverage
 ```
 
@@ -126,8 +127,9 @@ Brings up the API plus its own MongoDB, with named volumes for `uploads/`,
 
 ## API Endpoints
 
-All `/api/auth` routes are rate limited (30 requests / 15 min / IP; 10 for the
-credential endpoints). Every mutating route runs `express-validator` rules and
+A global limiter allows 600 requests / 15 min in production. All `/api/auth`
+routes are rate limited (30 requests / 15 min / IP; 10 for the credential
+endpoints), `/api/ai/symptom-check` to 60 / 15 min, and AI chat to 30 / hour. Every mutating route runs `express-validator` rules and
 returns `400 { success, message, errors: { field } }` on a validation failure.
 
 ### Auth (`/api/auth`)
@@ -149,9 +151,9 @@ reports `isVerified: false` so the UI can show a pending state.
 
 **Password reset** — only a SHA-256 hash of the token is stored, on
 `User.resetPasswordToken`, with a 30-minute expiry. Tokens are single use.
-Mail delivery arrives in Phase 8; until then the reset URL is logged
-server-side and, outside production, also returned in the response body so the
-flow is testable. Changing or resetting a password invalidates every token
+Mail delivery is not wired up (it needs SMTP credentials), so the reset URL is
+logged server-side and, outside production, also returned in the response body
+so the flow is testable from the `/reset-password/:token` page. Changing or resetting a password invalidates every token
 issued before the change.
 
 **Avatars** — written to `uploads/avatars/` and served from the public
@@ -169,28 +171,66 @@ auth-gated: medical reports are streamed through `GET /api/reports/:id/file`.
 ### Doctors (`/api/doctors`)
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
-| GET | `/` | Public | List all doctors |
+| GET | `/` | Public | List verified doctors (`?search=&specialization=&page=&limit=`) |
 | GET | `/:id` | Public | Get doctor by ID |
 | GET | `/:id/slots?date=` | Public | Get available slots |
 | PUT | `/profile` | Doctor | Update own profile |
+| GET | `/dashboard` | Doctor | Stat tiles + next appointment |
+| GET | `/schedule` | Doctor | Weekly schedule as `{ Monday: { enabled, slots } }` |
+| PUT | `/schedule` | Doctor | Save the weekly schedule |
+| GET | `/appointments/upcoming` | Doctor | Next appointments |
+| GET | `/patients` | Doctor | Patients who booked with this doctor (`?search=&status=&page=`) |
+| GET | `/patients/:patientId` | Doctor | One patient's profile, appointments, and reports |
+| PUT | `/patients/:patientId/status` | Doctor | Set `Active` / `Follow Up` / `Discharged` |
+
+The literal paths (`/dashboard`, `/schedule`, `/patients`, …) are registered
+**above** `/:id`, otherwise Express would parse them as a doctor id.
+
+**Schedule model** — `Doctor.weeklySchedule` is `[{ day, enabled, slots[] }]`
+with discrete `"HH:mm"` slots, plus `slotDuration` and `blockedDates`. Booking,
+slot lookup and rescheduling all read it. Per-patient `status` and
+`primaryCondition` live in `DoctorPatientLink`, upserted on first booking.
 
 ### Appointments (`/api/appointments`)
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
 | POST | `/` | Patient | Book appointment |
 | GET | `/` | Private | Get my appointments |
+| GET | `/today` | Private | Today's appointments (role-aware) |
 | GET | `/:id` | Private | Get appointment detail |
+| GET | `/:id/receipt` | Private | Consultation-fee receipt |
 | PUT | `/:id` | Doctor/Admin | Update status/prescription |
-| PUT | `/:id/cancel` | Private | Cancel appointment |
+| PUT | `/:id/reschedule` | Patient | Move to a new available slot (audit trail kept) |
+| PUT | `/:id/confirm` | Doctor/Admin | Confirm a pending appointment |
+| PUT | `/:id/complete` | Doctor/Admin | Complete, with prescription and notes |
+| PUT | `/:id/cancel` | Private | Cancel appointment (with a reason) |
+
+**Booking rules** — past dates, days disabled in the doctor's schedule or listed
+in `blockedDates`, and times not in that day's slots are rejected with 400.
+Unverified doctors cannot be booked (403). A partial unique index on
+`{ doctor, date, time }` over pending/confirmed appointments makes concurrent
+double-booking a 409 rather than a race.
 
 ### Reports (`/api/reports`)
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
 | POST | `/upload` | Patient | Upload medical report |
 | GET | `/` | Patient | Get my reports |
-| GET | `/:id` | Private | Get report with analysis |
+| GET | `/pending-review` | Doctor | Reports awaiting the doctor's comment |
+| GET | `/:id` | Owner/Doctor/Admin | Get report with analysis |
 | GET | `/:id/file` | Owner/Doctor/Admin | Stream the report file |
+| GET | `/:id/trends` | Owner/Doctor/Admin | The same parameters across earlier reports |
+| POST | `/:id/reanalyze` | Owner | Re-run the parser |
+| DELETE | `/:id` | Owner | Delete the report and its file |
 | PUT | `/:id/review` | Doctor | Review a report |
+
+**Parsing** — `reportParser.js` reads text PDFs with `pdf-parse` and OCRs images
+with `tesseract.js`, then matches 28 lab parameters (with the aliases labs
+actually print: `Hb`, `HGB`, `TLC`, `SGPT (ALT)`, …) line by line against
+`labRanges.js`, using sex-specific ranges where they differ. Trends compare
+against the patient's previous report with a 5% noise threshold.
+`riskCalculator.js` produces `riskLevel` + `riskScore` as a weighted proportion
+of the panel. Unsupported formats fail honestly instead of returning fixtures.
 
 ### AI (`/api/ai`)
 | Method | Endpoint | Access | Description |
@@ -204,6 +244,14 @@ auth-gated: medical reports are streamed through `GET /api/reports/:id/file`.
 | GET | `/chat/sessions` | Private | List the caller's chat sessions |
 | GET | `/chat/:sessionId` | Private | One session with full history |
 | DELETE | `/chat/:sessionId` | Private | Delete a session |
+
+**Chat engine** (`utils/aiEngine.js`) — emergency keywords short-circuit first
+to an urgent-care reply. Otherwise the Tier 1 rules engine routes intent over
+the disease and medicine catalog. With `AI_PROVIDER=gemini`, Tier 2 sends the
+message to Gemini with retrieved catalog snippets as context, trying
+`GEMINI_MODEL`, then `gemini-3.6-flash`, then `gemini-1.5-flash`; if every
+model fails, it falls back to Tier 1. Every reply carries the medical
+disclaimer.
 
 ### Medicines (`/api/medicines`)
 | Method | Endpoint | Access | Description |
@@ -224,6 +272,9 @@ auth-gated: medical reports are streamed through `GET /api/reports/:id/file`.
 | GET | `/appointments` | All appointments |
 | GET/POST/DELETE | `/content/diseases[/:id]` | Disease catalog management |
 | GET/POST/DELETE | `/content/medicines[/:id]` | Medicine catalog management |
+
+There is no `PUT` for content yet, so catalog entries can be created and
+deleted but not edited.
 
 ### Health Check
 | Method | Endpoint | Description |
@@ -257,8 +308,10 @@ Every endpoint answers with the same envelope:
 backend/
 ├── server.js              # Entry point
 ├── package.json
-├── .env
-├── .gitignore
+├── Dockerfile             # multi-stage, non-root, dumb-init, healthcheck
+├── .env                   # git-ignored
+├── .env.example           # placeholder template (git-ignored)
+├── plan.md                # implementation plan + audit log (complete)
 └── src/
     ├── app.js             # Express app setup
     ├── config/
@@ -274,21 +327,28 @@ backend/
     │   ├── Appointment.js # Appointments
     │   ├── Report.js      # Medical reports
     │   ├── Admin.js       # Admin profile (hospitalId, permissions)
-    │   └── Disease.js     # Disease reference
+    │   ├── Disease.js     # Disease reference
+    │   ├── Medicine.js    # Medicine reference
+    │   ├── ChatSession.js # AI assistant conversations
+    │   └── DoctorPatientLink.js # Per doctor–patient status / condition
     ├── controllers/
     │   ├── authController.js
     │   ├── patientController.js
     │   ├── doctorController.js
     │   ├── appointmentController.js
     │   ├── reportController.js
-    │   └── aiController.js
+    │   ├── medicineController.js
+    │   ├── aiController.js
+    │   └── adminController.js
     ├── routes/
     │   ├── authRoutes.js
     │   ├── patientRoutes.js
     │   ├── doctorRoutes.js
     │   ├── appointmentRoutes.js
     │   ├── reportRoutes.js
-    │   └── aiRoutes.js
+    │   ├── medicineRoutes.js
+    │   ├── aiRoutes.js
+    │   └── adminRoutes.js
     ├── middleware/
     │   ├── authMiddleware.js  # JWT verification
     │   ├── roleMiddleware.js  # Role-based access

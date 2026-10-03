@@ -62,8 +62,8 @@ module.exports = {
   // AI
   AI_PROVIDER,
   GEMINI_API_KEY,
-  // Free tier as of 2026: gemini-2.5-flash. Override if Google renames it.
-  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+  // Free tier: gemini-3.6-flash. Override if Google renames it.
+  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
 
   // Storage
   STORAGE_DRIVER,

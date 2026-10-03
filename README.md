@@ -28,7 +28,7 @@ verify doctor licenses and curate the content catalog.
 - [Security](#security)
 - [Testing](#testing)
 - [Documentation](#documentation)
-- [Roadmap](#roadmap)
+- [Project status](#project-status)
 
 ---
 
@@ -40,22 +40,31 @@ verify doctor licenses and curate the content catalog.
 - **Disease & medicine catalog** — searchable, category-filtered listings with
   detail pages; every disease page links to verified doctors who treat it.
 - **Appointment booking** — pick a doctor, see real available slots from their
-  weekly schedule, book, view history, and cancel.
+  weekly schedule, book, reschedule, cancel, view history, and pull a
+  consultation-fee receipt. Double-booking is blocked at the database level.
 - **Report upload & analysis** — upload a lab report (PDF or scan). Text PDFs
   are parsed with `pdf-parse`; scanned images fall back to Tesseract OCR. 28 lab
   parameters are extracted against sex-aware reference ranges, flagged
   low/normal/high, scored for health risk, and trended against earlier reports
-  for the same patient.
+  for the same patient. Reports can be re-analysed or deleted.
 - **AI assistant** — a chat assistant grounded in the disease/medicine catalog.
   Runs on a deterministic rules engine by default (no API key, no quota) with an
-  optional Google Gemini overlay that degrades back to rules on any error.
+  optional Google Gemini overlay that walks a model fallback chain and degrades
+  back to rules on any error. Emergency phrases ("chest pain", stroke signs)
+  short-circuit to an urgent-care reply. The chat UI has a searchable session
+  history sidebar, Markdown-rendered replies, suggestion chips, and
+  copy-to-clipboard on any answer.
 - **Profile & auth** — registration, login, password change, forgot/reset
   password, and avatar upload.
 
 ### For doctors
-- Dashboard, weekly schedule management, and a linked-patient list.
-- Appointment status updates and prescriptions.
-- Report review — annotate a patient's analysed report.
+- Dashboard with live stats (today, this week, unique patients, pending
+  reviews, next appointment).
+- Weekly schedule editor with discrete 30-minute slots and blocked dates.
+- Linked-patient list with per-patient history and an Active / Follow Up /
+  Discharged status.
+- Confirm and complete appointments, with prescriptions and notes.
+- Report review queue — annotate a patient's analysed report.
 - Accounts start **unverified**: a doctor can log in but is hidden from public
   doctor listings until an admin approves their medical license.
 
@@ -232,7 +241,7 @@ All backend keys, read only through `src/config/env.js`:
 | `CLIENT_URL` | no | `http://localhost:3000` | The **only** allowed CORS origin, and the base for password-reset links |
 | `AI_PROVIDER` | no | `rules` | `rules` = catalog-grounded engine only (no key, no quota). `gemini` = Gemini overlay, falling back to `rules` on any error |
 | `GEMINI_API_KEY` | only if `AI_PROVIDER=gemini` | — | Free key, no card: <https://aistudio.google.com/apikey> |
-| `GEMINI_MODEL` | no | `gemini-2.5-flash` | Override if Google renames the free-tier model |
+| `GEMINI_MODEL` | no | `gemini-3.6-flash` | Tried first; on failure the engine falls back to `gemini-3.6-flash`, then `gemini-1.5-flash`, then the rules engine |
 | `STORAGE_DRIVER` | no | `local` | `local` writes to `backend/uploads/`. `cloudinary` needs all three keys below and **silently downgrades to `local`** with a warning if any is missing |
 | `CLOUDINARY_CLOUD_NAME` | only if cloudinary | — | |
 | `CLOUDINARY_API_KEY` | only if cloudinary | — | |
@@ -330,27 +339,43 @@ Base URL: `http://localhost:5000/api`
 ### Doctors (`/api/doctors`)
 | Method | Endpoint | Access | Description |
 |---|---|---|---|
-| GET | `/` | Public | List doctors (verified only) |
+| GET | `/` | Public | List verified doctors (`?search=&specialization=&page=&limit=`) |
 | GET | `/:id` | Public | Doctor by ID |
 | GET | `/:id/slots?date=` | Public | Available slots for a date |
-| PUT | `/profile` | Doctor | Update own profile / weekly schedule |
+| PUT | `/profile` | Doctor | Update own profile |
+| GET | `/dashboard` | Doctor | Stat tiles + next appointment |
+| GET | `/schedule` | Doctor | Weekly schedule as `{ Monday: { enabled, slots } }` |
+| PUT | `/schedule` | Doctor | Save the weekly schedule |
+| GET | `/appointments/upcoming` | Doctor | Next appointments |
+| GET | `/patients` | Doctor | Patients who booked with this doctor (`?search=&status=&page=`) |
+| GET | `/patients/:patientId` | Doctor | One patient's profile, appointments, and reports |
+| PUT | `/patients/:patientId/status` | Doctor | Set `Active` / `Follow Up` / `Discharged` |
 
 ### Appointments (`/api/appointments`)
 | Method | Endpoint | Access | Description |
 |---|---|---|---|
 | POST | `/` | Patient | Book an appointment |
 | GET | `/` | Private | My appointments |
+| GET | `/today` | Private | Today's appointments (role-aware) |
 | GET | `/:id` | Private | Appointment detail |
+| GET | `/:id/receipt` | Private | Consultation-fee receipt |
 | PUT | `/:id` | Doctor/Admin | Update status / prescription |
-| PUT | `/:id/cancel` | Private | Cancel |
+| PUT | `/:id/reschedule` | Patient | Move to a new available slot |
+| PUT | `/:id/confirm` | Doctor/Admin | Confirm a pending appointment |
+| PUT | `/:id/complete` | Doctor/Admin | Complete, with prescription and notes |
+| PUT | `/:id/cancel` | Private | Cancel (with a reason) |
 
 ### Reports (`/api/reports`)
 | Method | Endpoint | Access | Description |
 |---|---|---|---|
 | POST | `/upload` | Patient | Upload a medical report |
 | GET | `/` | Patient | My reports |
-| GET | `/:id` | Private | Report with analysis |
+| GET | `/pending-review` | Doctor | Reports awaiting the doctor's comment |
+| GET | `/:id` | Owner/Doctor/Admin | Report with analysis |
 | GET | `/:id/file` | Owner/Doctor/Admin | Stream the report file |
+| GET | `/:id/trends` | Owner/Doctor/Admin | The same parameters across earlier reports |
+| POST | `/:id/reanalyze` | Owner | Re-run the parser |
+| DELETE | `/:id` | Owner | Delete the report and its file |
 | PUT | `/:id/review` | Doctor | Review a report |
 
 ### AI (`/api/ai`)
@@ -455,8 +480,9 @@ Every endpoint answers with the same envelope:
   origin (`CLIENT_URL`).
 - **express-mongo-sanitize** strips operator injection from request payloads;
   **hpp** blocks HTTP parameter pollution.
-- **Rate limiting** — all `/api/auth` routes are limited to 30 requests /
-  15 min / IP (10 for the credential endpoints); AI chat is 30 / hour.
+- **Rate limiting** — a global limiter (600 requests / 15 min in production);
+  all `/api/auth` routes are limited to 30 / 15 min / IP (10 for the credential
+  endpoints); the public symptom checker is 60 / 15 min; AI chat is 30 / hour.
 - **Passwords** are bcrypt-hashed. Changing or resetting a password invalidates
   every token issued before the change.
 - **Password reset** stores only a SHA-256 hash of the token on
@@ -486,20 +512,21 @@ npm run test:watch    # watch mode
 npm run test:coverage # with coverage
 ```
 
-Every suite runs against a throwaway in-memory MongoDB
-(`mongodb-memory-server`), so tests never touch a real database. The first run
-downloads a MongoDB binary.
+**120 tests across 6 suites.** Every suite runs against a throwaway in-memory
+MongoDB (`mongodb-memory-server`), so tests never touch a real database. The
+first run downloads a MongoDB binary.
 
-| Suite | Covers |
-|---|---|
-| `auth.test.js` | registration, login, token rotation, reset flow, role guards |
-| `appointments.test.js` | booking rules, double-booking, authorization |
-| `reports.test.js` | PHI access control, file streaming, deletion |
-| `catalog.test.js` | diseases, medicines, symptom checker, pagination |
-| `security.test.js` | headers, CORS, injection, error envelope |
-| `parser.test.js` | lab extraction, trend computation, risk scoring |
+| Suite | Tests | Covers |
+|---|---|---|
+| `auth.test.js` | 20 | registration (incl. rollback), login, token rotation, reset flow, role guards |
+| `appointments.test.js` | 17 | booking rules, sequential and concurrent double-booking, authorization |
+| `reports.test.js` | 14 | PHI access control, file streaming, deletion |
+| `catalog.test.js` | 28 | diseases, medicines, symptom checker, pagination |
+| `security.test.js` | 15 | headers, CORS, injection, HPP, error envelope |
+| `parser.test.js` | 26 | lab extraction, aliases, sex-aware ranges, trends, risk scoring |
 
-Frontend tests use Testing Library via `cd frontend && npm test`.
+The frontend has only the Create React App placeholder test
+(`cd frontend && npm test`); page-level tests are not written yet.
 
 ---
 
@@ -510,21 +537,45 @@ Frontend tests use Testing Library via `cd frontend && npm test`.
 | <http://localhost:5000/api/docs> | Interactive Swagger UI (server running) |
 | <http://localhost:5000/api/docs.json> | Raw OpenAPI spec |
 | `backend/README.md` | Full backend reference — env, endpoints, structure |
+| `frontend/README.md` | Frontend setup, structure, and API client reference |
 | `backend/plan.md` | Phased implementation plan, audit findings, verification logs |
 | `docs/` | Per-area path and architecture notes (backend, frontend, ml, common) |
 
 ---
 
-## Roadmap
+## Project status
 
-Tracked in `backend/plan.md`. Phases 0–9 cover stabilisation, auth, the content
-catalog, the doctor and appointment modules, reports, AI chat, the admin module,
-hardening, and testing/seeding/deployment. Still outstanding:
+The implementation plan in `backend/plan.md` is **complete**. All ten phases
+are done:
 
-- **Email delivery** — password-reset and appointment notification mail.
-- **ML service** — a separate Python (Flask/FastAPI) service for trained
-  disease-prediction and risk models, sketched in `docs/ml_docs/ml_path.md`.
-  Prediction currently runs on the rules engine plus the optional Gemini tier.
+| Phase | Scope | Status |
+|---|---|---|
+| 0 | Stabilise the existing API (access control, slugs, env) | ✅ |
+| 1 | Auth, accounts, validation, rate limiting | ✅ |
+| 2 | Medicine module + disease catalog | ✅ |
+| 3 | Doctor module (dashboard, schedule, patients) | ✅ |
+| 4 | Appointment lifecycle (reschedule, confirm, complete, receipts) | ✅ |
+| 5 | Report parsing, trends, and analysis | ✅ |
+| 6 | AI assistant chat | ✅ |
+| 7 | Admin module | ✅ |
+| 8 | Hardening (security middleware, errors, logging, Swagger) | ✅ |
+| 9 | Tests, idempotent seeder, Docker | ✅ |
+
+No page in `frontend/src/pages/` renders mock or fallback data any more; every
+screen loads from the API with loading, empty, and error states.
+
+### Known gaps
+
+- **Admin content editing** — diseases and medicines can be created and
+  deleted from the admin console, but not edited (there is no `PUT` endpoint).
+- **Frontend tests** — all 120 tests are backend tests.
+- **Email delivery** — password-reset and appointment mail need SMTP
+  credentials; the reset link is logged server-side for now.
+- **Docker image build** — `docker compose config` validates, but the image
+  build has not been run end to end.
+- **ML service** — a separate Python service for trained models was dropped
+  from scope; lab analysis runs in-process (`labRanges.js` +
+  `riskCalculator.js`). `docs/ml_docs/ml_path.md` keeps the original sketch.
 - **Frontend containerisation** and a production static-hosting setup.
 
 ---

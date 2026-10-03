@@ -378,11 +378,6 @@ const geminiEngine = async (message, history) => {
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
   const context = await buildContext(message);
 
-  const model = genAI.getGenerativeModel({
-    model: GEMINI_MODEL,
-    systemInstruction: SYSTEM_PROMPT + context,
-  });
-
   // Gemini requires history to start with a 'user' turn and alternate. Our
   // sessions can open with an assistant greeting, so drop leading model turns.
   const mapped = history.map((m) => ({
@@ -391,16 +386,32 @@ const geminiEngine = async (message, history) => {
   }));
   while (mapped.length && mapped[0].role === 'model') mapped.shift();
 
-  const chat = model.startChat({
-    history: mapped.slice(-10),
-    generationConfig: { maxOutputTokens: 800, temperature: 0.4 },
-  });
+  const modelsToTry = [GEMINI_MODEL, 'gemini-3.6-flash', 'gemini-1.5-flash'].filter(Boolean);
+  let lastError = null;
 
-  const result = await chat.sendMessage(message);
-  const text = result.response.text()?.trim();
+  for (const modelName of [...new Set(modelsToTry)]) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        systemInstruction: SYSTEM_PROMPT + context,
+      });
 
-  if (!text) throw new Error('Gemini returned an empty response');
-  return text;
+      const chat = model.startChat({
+        history: mapped.slice(-10),
+        generationConfig: { maxOutputTokens: 800, temperature: 0.4 },
+      });
+
+      const result = await chat.sendMessage(message);
+      const text = result.response.text()?.trim();
+
+      if (text) return text;
+    } catch (err) {
+      lastError = err;
+      console.warn(`Gemini model ${modelName} failed (${err.message}), trying next fallback...`);
+    }
+  }
+
+  throw lastError || new Error('Gemini returned an empty response');
 };
 
 // ──────────────────────────────────────────────
