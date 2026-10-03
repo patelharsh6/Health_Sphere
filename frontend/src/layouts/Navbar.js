@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Menu, X, Search, User, ChevronDown, Activity, 
   Pill, Stethoscope, FileText, Calendar, Upload, 
-  Bot, Bell, LayoutDashboard, ShieldCheck, LogOut,
+  Bot, Bell, LayoutDashboard, LogOut,
   Heart, BookOpen
 } from 'lucide-react';
 import './Navbar.css';

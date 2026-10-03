@@ -353,7 +353,7 @@ const Signup = () => {
             <div className="su-checkboxes">
               <label className="su-checkbox-label">
                 <input type="checkbox" name="termsAccepted" checked={formData.termsAccepted} onChange={handleChange} />
-                <span>I agree to the <a href="#">Terms & Conditions</a></span>
+                <span>I agree to the <span className="terms-link" style={{ textDecoration: 'underline', cursor: 'pointer' }}>Terms & Conditions</span></span>
               </label>
               {errors.terms && <span className="su-error">{errors.terms}</span>}
 

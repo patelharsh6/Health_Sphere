@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Search, Calendar as CalendarIcon, Clock, MapPin, 
+  Search, Calendar as CalendarIcon, MapPin, 
   Star, CheckCircle, User, FileText, ChevronLeft, X, 
   Stethoscope, ShieldCheck, Loader
 } from 'lucide-react';
@@ -36,6 +36,7 @@ const BookAppointment = () => {
 
   useEffect(() => {
     fetchDoctors();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSpec]);
 
   const fetchDoctors = async () => {

@@ -5,13 +5,12 @@ import {
   TrendingDown, Activity, Download, RefreshCw, 
   Stethoscope, ArrowRight, ShieldAlert, HeartPulse, Loader
 } from 'lucide-react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { reportAPI } from '../services/api';
 import './ReportAnalysis.css';
 
 const ReportAnalysis = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

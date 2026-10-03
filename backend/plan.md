@@ -4,6 +4,14 @@
 
 **Status legend:** ✅ done · ⚠️ exists but broken/incomplete · ❌ missing
 
+> **✅ PLAN COMPLETE (2026-10-03).** Phases 0–9 are all done. The phase
+> sections below are kept as the original specification. For what was actually
+> built, and every deviation from it, read the audit logs at the end:
+> [Post-Phase-7 audit](#post-phase-7-audit-2026-08-22),
+> [Phases 8 & 9](#phases-8--9-2026-08-22) and
+> [Closing notes](#closing-notes-2026-10-03). The known remaining gaps are
+> listed under [Closing notes](#closing-notes-2026-10-03).
+
 ---
 
 ## 1. Current state audit
@@ -578,3 +586,46 @@ for an unverified doctor, and `appointments.test.js` covers it.
 - Frontend has no tests (the 120 above are all backend).
 - `nodemailer` (see above).
 - The Docker image build has not been executed.
+
+---
+
+## Closing notes (2026-10-03)
+
+The plan is complete. The "Definition of done" holds:
+
+- ✅ No `mock*` / `fallback*` / static data array remains in `frontend/src/pages/`.
+- ✅ Every page in the coverage matrix loads from `/api` with loading, empty and error states.
+- ✅ No endpoint returns another user's medical data; report files are auth-gated.
+- ✅ `npm test` passes (120 tests, 6 suites); `npm run seed` produces a fully populated demo.
+
+### Final changes
+
+1. **Gemini model fallback chain.** `GEMINI_MODEL` now defaults to
+   `gemini-3.6-flash`. `geminiEngine` in `utils/aiEngine.js` tries
+   `GEMINI_MODEL`, then `gemini-3.6-flash`, then `gemini-1.5-flash`
+   (deduplicated), and only falls back to the Tier 1 rules engine if all of
+   them fail. That way a renamed or quota-exhausted model degrades one step at
+   a time instead of dropping straight to rules.
+2. **AI Assistant UI rebuilt** (`frontend/src/pages/AIAssistant.{js,css}`):
+   - a session sidebar with search, a new-chat button and delete (a drawer on
+     mobile)
+   - a Markdown renderer for replies, with the disclaimer shown as a callout
+   - starter-prompt cards on an empty chat
+   - copy-to-clipboard on each reply
+   - a distinct style for emergency responses
+3. **Documentation brought in line with the code.**
+   - Root and backend READMEs now list every Phase 3–5 endpoint (doctor
+     dashboard/schedule/patients, appointment reschedule/confirm/complete/
+     today/receipt, report delete/reanalyze/trends/pending-review).
+   - `frontend/README.md` replaces the Create React App boilerplate.
+   - `docs/*_path.md` now show the real tree rather than the original sketch.
+
+### Known gaps (not in scope of this plan)
+
+| Gap | Why it is open |
+|---|---|
+| Admin content `PUT` (edit a disease/medicine) | Never specified beyond "CRUD"; create + delete ship, edit does not |
+| Frontend tests | Only the Create React App placeholder exists |
+| `nodemailer` | Optional in Phase 8; needs SMTP credentials |
+| Docker image build | `docker compose config` validates; the build itself has not been run |
+| Python ML service | Dropped in the Post-Phase-7 audit; analysis runs in-process |

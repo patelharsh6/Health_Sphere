@@ -36,6 +36,7 @@ const ReportUpload = () => {
       return;
     }
     fetchRecentReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, authLoading]);
 
   const fetchRecentReports = async () => {

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Activity, Calendar, FileText, Bot, Bell, 
-  User, Clock, AlertTriangle, ChevronRight, 
-  Plus, Upload, TrendingUp, CheckCircle, Search,
+  Clock, Plus, Upload, TrendingUp, Search,
   Loader
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -32,6 +31,7 @@ const PatientDashboard = () => {
       return;
     }
     fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, authLoading]);
 
   const fetchDashboardData = async () => {

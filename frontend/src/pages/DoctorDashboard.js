@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Activity, Calendar, Users, FileText, Bell, 
-  MapPin, CheckCircle, Clock, ChevronRight, Loader
+  Activity, Calendar, Users, 
+  CheckCircle, Clock, Loader
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -26,6 +26,7 @@ const DoctorDashboard = () => {
       return;
     }
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, authLoading, user]);
 
   const fetchData = async () => {
@@ -61,7 +62,7 @@ const DoctorDashboard = () => {
     );
   }
 
-  const firstName = user?.fullName?.split(' ')[0] || 'Doctor';
+  const doctorName = user?.fullName || 'Doctor';
   const initials = user?.fullName?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'DR';
 
   const getMonthDay = (dateStr) => {
@@ -98,7 +99,7 @@ const DoctorDashboard = () => {
         {/* HEADER */}
         <header className="dashboard-header">
           <div>
-            <h1>Welcome back, Dr. {lastName(user?.fullName)} 👋</h1>
+            <h1>Welcome back, Dr. {doctorName} 👋</h1>
             <p>Your practice overview at a glance.</p>
           </div>
           <div className="header-actions">

@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
-  Activity, ShieldCheck, AlertTriangle, Stethoscope, 
+  Activity, ShieldCheck, AlertTriangle, 
   Pill, Info, ChevronDown, ChevronUp, Thermometer, 
-  HeartPulse, FileText, ArrowRight, BookOpen, AlertCircle,
-  Loader
+  HeartPulse, AlertCircle, Loader
 } from 'lucide-react';
 import { aiAPI } from '../services/api';
 import './DiseaseDetail.css';
@@ -46,6 +45,7 @@ const DiseaseDetail = () => {
     if (slug) {
       fetchDisease();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
   const fetchDisease = async () => {

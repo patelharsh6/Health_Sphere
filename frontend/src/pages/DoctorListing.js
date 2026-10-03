@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Search, Filter, Star, MapPin, Calendar, 
+  Search, Filter, Star, MapPin, 
   Clock, X, Award, ThumbsUp, ChevronRight, 
   Stethoscope, ShieldCheck, Loader
 } from 'lucide-react';
@@ -20,6 +20,7 @@ const DoctorListing = () => {
 
   useEffect(() => {
     fetchDoctors();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSpec]);
 
   const fetchDoctors = async () => {

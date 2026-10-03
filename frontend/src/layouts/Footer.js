@@ -74,10 +74,10 @@ const Footer = () => {
             </div>
             
             <div className="social-links">
-              <a href="#" aria-label="Facebook"><Facebook size={18} /></a>
-              <a href="#" aria-label="Twitter"><Twitter size={18} /></a>
-              <a href="#" aria-label="Instagram"><Instagram size={18} /></a>
-              <a href="#" aria-label="LinkedIn"><Linkedin size={18} /></a>
+              <button type="button" className="social-link-btn" aria-label="Facebook"><Facebook size={18} /></button>
+              <button type="button" className="social-link-btn" aria-label="Twitter"><Twitter size={18} /></button>
+              <button type="button" className="social-link-btn" aria-label="Instagram"><Instagram size={18} /></button>
+              <button type="button" className="social-link-btn" aria-label="LinkedIn"><Linkedin size={18} /></button>
             </div>
           </div>
 

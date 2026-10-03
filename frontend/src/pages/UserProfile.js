@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  User, Mail, Phone, Calendar, Edit2, Save,
+  User, Mail, Phone, Edit2, Save,
   X, Droplet, Activity, AlertCircle, Shield,
-  Heart, Bell, Lock, LogOut, Camera, MapPin,
+  Heart, Bell, Lock, LogOut, Camera,
   CheckCircle, ChevronLeft, Loader, KeyRound, Eye, EyeOff
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -63,6 +63,7 @@ const UserProfile = () => {
       return;
     }
     loadProfileData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, authLoading, user, profile]);
 
   const loadProfileData = () => {

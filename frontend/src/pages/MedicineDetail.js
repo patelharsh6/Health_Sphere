@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { 
   Pill, Activity, AlertTriangle, ShieldAlert, 
   Info, ChevronDown, ChevronUp, Beaker, 
-  Zap, FileWarning, Thermometer, Loader 
+  Zap, FileWarning, Loader 
 } from 'lucide-react';
 import { medicineAPI } from '../services/api';
 import './MedicineDetail.css';

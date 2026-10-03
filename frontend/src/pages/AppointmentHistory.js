@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Calendar, Clock, MapPin, User, ChevronLeft, 
+  Calendar, Clock, ChevronLeft, 
   CheckCircle, XCircle, AlertCircle, FileText, 
-  Star, Video, CreditCard, X, Activity, Loader
+  Star, CreditCard, X, Loader
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -25,6 +25,7 @@ const AppointmentHistory = () => {
       return;
     }
     fetchAppointments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, authLoading]);
 
   const fetchAppointments = async () => {

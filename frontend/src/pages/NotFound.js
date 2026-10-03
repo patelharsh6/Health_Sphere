@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, ArrowLeft, Search, Activity } from 'lucide-react';
+import { Home, ArrowLeft, Activity } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import './NotFound.css';
 

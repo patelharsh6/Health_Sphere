@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Search, Pill, AlertTriangle, ArrowRight,
-  ChevronRight, Shield, Clock, Activity, Filter, Loader
+  ChevronRight, Loader
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { medicineAPI } from '../services/api';

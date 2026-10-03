@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Calendar, Clock, ChevronRight, ChevronLeft,
-  Plus, Check, X, Activity, ArrowLeft,
-  Loader, Save, Trash2
+  Calendar, Clock, Check, Activity, ArrowLeft,
+  Loader, Save
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

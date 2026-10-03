@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Users, Search, ChevronRight, User, Calendar,
-  Mail, Phone, Activity, Clock, FileText, Loader,
-  Filter, ArrowLeft
+  Users, Search, Calendar,
+  Mail, Phone, Activity, FileText, Loader,
+  ArrowLeft
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

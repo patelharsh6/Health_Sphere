@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Search, X, AlertTriangle, Activity, 
   Stethoscope, Info, Bot, Thermometer, 
-  ArrowRight, ShieldAlert, Calendar 
+  ShieldAlert 
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { aiAPI } from '../services/api';
@@ -222,6 +222,7 @@ const SymptomChecker = () => {
             {isAnalyzing ? "Analyzing Symptoms using AI..." : "Analyze Symptoms"}
             {!isAnalyzing && <Activity size={18} />}
           </button>
+          {apiError && <p style={{ color: '#ef4444', textAlign: 'center', marginTop: '12px' }}>{apiError}</p>}
         </div>
 
         {/* RIGHT COLUMN: PREDICTION RESULTS */}

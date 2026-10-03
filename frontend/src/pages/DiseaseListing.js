@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Search, Heart, Brain, Bone, Eye, Stethoscope,
-  Activity, ArrowRight, Filter, Loader, AlertCircle,
-  ChevronRight, Shield, Pill
+  Search, Heart, Brain, Bone, Stethoscope,
+  Activity, ArrowRight, Loader, AlertCircle,
+  ChevronRight, Shield
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { aiAPI } from '../services/api';

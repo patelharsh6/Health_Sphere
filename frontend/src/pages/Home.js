@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   Activity, Calendar, FileText, Bot, 
-  Stethoscope, ShieldCheck, ArrowRight, 
+  Stethoscope, ShieldCheck, 
   CheckCircle, AlertTriangle, User, 
   Search, Pill 
 } from 'lucide-react';
@@ -139,8 +139,8 @@ const Home = () => {
               <p>24/7 health guidance & tips.</p>
             </div>
           </Link>
-          <Link to="/diseases"  style={{ textDecoration: "none" , color:'inherit'  , color:'inherit' }}>
-            <div className="feature-card"  style={{ textDecoration: "none" }}>
+          <Link to="/diseases" style={{ textDecoration: "none", color: 'inherit' }}>
+            <div className="feature-card" style={{ textDecoration: "none" }}>
               <div className="icon-box orange"><Search size={24} /></div>
               <h3>Explore Diseases</h3>
               <p>Comprehensive medical encyclopedia.</p>
