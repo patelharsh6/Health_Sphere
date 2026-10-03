@@ -1,72 +1,38 @@
-HealthSphere/
+# HealthSphere — repository layout
+
+The actual top-level structure. For details, see:
+
+- [backend_path.md](../backend_docs/backend_path.md)
+- [frontend_path.md](../frontend_docs/frontend_path.md)
+- [ml_path.md](../ml_docs/ml_path.md) (not built)
+
+```
+Health_Sphere/
+├── README.md                  # Project overview, setup, API, status
+├── docker-compose.yml         # api + mongo, named volumes, secrets from backend/.env
 │
-├── frontend/                 # React app (already created)
+├── backend/                   # Node + Express + MongoDB REST API
+│   ├── src/                   # config, models, controllers, routes,
+│   │                          # middleware, validators, utils
+│   ├── tests/                 # 120 jest tests across 6 suites
+│   ├── Dockerfile
+│   ├── plan.md                # Implementation plan (complete) + audit log
+│   └── README.md
 │
-├── backend/                  # Node + Express API
-│   ├── src/
-│   │   ├── config/           # DB, env, cloud configs
-│   │   │   ├── db.js
-│   │   │   └── env.js
-│   │   │
-│   │   ├── models/           # MongoDB schemas
-│   │   │   ├── User.js
-│   │   │   ├── Patient.js
-│   │   │   ├── Doctor.js
-│   │   │   ├── Appointment.js
-│   │   │   ├── Report.js
-│   │   │   └── Disease.js
-│   │   │
-│   │   ├── controllers/      # Business logic
-│   │   │   ├── authController.js
-│   │   │   ├── patientController.js
-│   │   │   ├── doctorController.js
-│   │   │   ├── appointmentController.js
-│   │   │   ├── reportController.js
-│   │   │   └── aiController.js
-│   │   │
-│   │   ├── routes/           # API routes
-│   │   │   ├── authRoutes.js
-│   │   │   ├── patientRoutes.js
-│   │   │   ├── doctorRoutes.js
-│   │   │   ├── appointmentRoutes.js
-│   │   │   ├── reportRoutes.js
-│   │   │   └── aiRoutes.js
-│   │   │
-│   │   ├── middleware/       # Auth, role checks
-│   │   │   ├── authMiddleware.js
-│   │   │   └── roleMiddleware.js
-│   │   │
-│   │   ├── utils/            # Helpers
-│   │   │   ├── jwt.js
-│   │   │   ├── reportParser.js
-│   │   │   └── riskCalculator.js
-│   │   │
-│   │   └── app.js            # Express app
-│   │
-│   ├── server.js             # Entry point
-│   └── package.json
+├── frontend/                  # React 19 SPA (Create React App)
+│   ├── src/                   # App.js, context/, services/, layouts/, pages/
+│   └── README.md
 │
-├── ml/                       # Machine Learning
-│   ├── models/
-│   │   ├── disease_model.pkl
-│   │   └── risk_model.pkl
-│   │
-│   ├── notebooks/
-│   │   ├── disease_prediction.ipynb
-│   │   └── report_analysis.ipynb
-│   │
-│   ├── api/
-│   │   └── predict.py        # Flask/FastAPI ML service
-│   │
-│   └── requirements.txt
-│
-├── docs/                     # Viva & documentation
-│   ├── problem-statement.md
-│   ├── system-architecture.md
-│   ├── api-documentation.md
-│   └── future-scope.md
-│
-├── .env
-├── .gitignore
-├── README.md
-└── package.json              # Root scripts (optional)
+└── docs/
+    ├── backend_docs/backend_path.md
+    ├── frontend_docs/frontend_path.md
+    ├── ml_docs/ml_path.md
+    └── common_docs/all_path.md   # This file
+```
+
+Two parts of the original sketch were not built:
+
+- **`ml/`** — a Python model service. Lab analysis and symptom scoring run
+  inside the backend instead; see `ml_path.md`.
+- **Root `package.json`** — the backend and frontend are installed and run
+  separately.

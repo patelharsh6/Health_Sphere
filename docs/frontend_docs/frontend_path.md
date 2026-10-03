@@ -1,109 +1,55 @@
+# Frontend — folder structure
+
+This is the actual layout of `frontend/`. Setup, routes and the API client are
+documented in [`frontend/README.md`](../../frontend/README.md).
+
+The original plan split API calls into `src/api/*.api.js` files and pages into
+per-area folders of `.jsx` files. The project went flatter instead: one
+`services/api.js`, and a single `pages/` folder with `admin/` as its only
+subfolder.
+
+```
 frontend/
-│
-├── public/
-│   ├── index.html
-│   └── assets/
-│       ├── images/
-│       ├── icons/
-│       └── videos/
-│
-├── src/
-│   ├── api/                       # All backend & ML API calls
-│   │   ├── axiosInstance.js
-│   │   ├── auth.api.js
-│   │   ├── patient.api.js
-│   │   ├── doctor.api.js
-│   │   ├── appointment.api.js
-│   │   ├── report.api.js
-│   │   └── ai.api.js
-│   │
-│   ├── assets/                    # Images, icons used in components
-│   │   ├── images/
-│   │   ├── icons/
-│   │   └── styles/
-│   │       ├── variables.css
-│   │       └── global.css
-│   │
-│   ├── components/                # Reusable UI components
-│   │   ├── common/
-│   │   │   ├── Navbar.jsx
-│   │   │   ├── Footer.jsx
-│   │   │   ├── Sidebar.jsx
-│   │   │   ├── Loader.jsx
-│   │   │   └── ProtectedRoute.jsx
-│   │   │
-│   │   ├── charts/
-│   │   │   ├── LineChart.jsx
-│   │   │   └── BarChart.jsx
-│   │   │
-│   │   └── cards/
-│   │       ├── DiseaseCard.jsx
-│   │       ├── DoctorCard.jsx
-│   │       └── ReportCard.jsx
-│   │
-│   ├── pages/                     # Main pages (routes)
-│   │   ├── auth/
-│   │   │   ├── Login.jsx
-│   │   │   └── Register.jsx
-│   │   │
-│   │   ├── home/
-│   │   │   └── Home.jsx
-│   │   │
-│   │   ├── encyclopedia/
-│   │   │   ├── DiseaseList.jsx
-│   │   │   ├── DiseaseDetail.jsx
-│   │   │   └── MedicineDetail.jsx
-│   │   │
-│   │   ├── symptom-checker/
-│   │   │   └── SymptomChecker.jsx
-│   │   │
-│   │   ├── patient/
-│   │   │   ├── PatientDashboard.jsx
-│   │   │   ├── Appointments.jsx
-│   │   │   ├── Reports.jsx
-│   │   │   └── HealthInsights.jsx
-│   │   │
-│   │   ├── doctor/
-│   │   │   ├── DoctorDashboard.jsx
-│   │   │   ├── PatientList.jsx
-│   │   │   └── Schedule.jsx
-│   │   │
-│   │   ├── admin/
-│   │   │   ├── AdminDashboard.jsx
-│   │   │   ├── ManageDoctors.jsx
-│   │   │   ├── ManagePatients.jsx
-│   │   │   └── Analytics.jsx
-│   │   │
-│   │   └── blog/
-│   │       ├── BlogList.jsx
-│   │       └── BlogDetail.jsx
-│   │
-│   ├── routes/                    # Route definitions
-│   │   ├── AppRoutes.jsx
-│   │   └── RoleRoutes.jsx
-│   │
-│   ├── context/                   # Global state (Auth, User)
-│   │   ├── AuthContext.jsx
-│   │   └── UserContext.jsx
-│   │
-│   ├── hooks/                     # Custom hooks
-│   │   ├── useAuth.js
-│   │   └── useFetch.js
-│   │
-│   ├── utils/                     # Helper functions
-│   │   ├── formatDate.js
-│   │   ├── calculateRisk.js
-│   │   └── constants.js
-│   │
-│   ├── layouts/                   # Page layouts
-│   │   ├── MainLayout.jsx
-│   │   ├── DashboardLayout.jsx
-│   │   └── AuthLayout.jsx
-│   │
-│   ├── App.js
-│   ├── index.js
-│   └── index.css
-│
-├── .env
+├── public/                    # index.html, favicon, manifest, logos
+├── build/                     # Production bundle (npm run build)
 ├── package.json
-└── README.md
+├── README.md
+│
+└── src/
+    ├── App.js                 # Route table
+    ├── App.css, index.css
+    ├── index.js               # Entry point
+    ├── accets/logo.png
+    │
+    ├── context/
+    │   └── AuthContext.js     # User, token, login/logout, isVerified, changePassword
+    │
+    ├── services/
+    │   └── api.js             # axios instance + interceptors, assetUrl(),
+    │                          # authAPI, patientAPI, doctorAPI, appointmentAPI,
+    │                          # reportAPI, aiAPI, medicineAPI, adminAPI
+    │
+    ├── layouts/
+    │   ├── Navbar.js / .css   # Role-aware navigation
+    │   └── Footer.js / .css
+    │
+    └── pages/                 # Each page has a matching .css file
+        ├── Home
+        ├── Login, Signup, ForgotPassword, ResetPassword
+        ├── SymptomChecker
+        ├── AIAssistant        # Chat with session sidebar + Markdown replies
+        ├── DiseaseListing, DiseaseDetail
+        ├── MedicineListing, MedicineDetail
+        ├── DoctorListing, BookAppointment, AppointmentHistory
+        ├── PatientDashboard, ReportUpload, ReportAnalysis
+        ├── DoctorDashboard, DoctorPatients, DoctorSchedule
+        ├── UserProfile
+        ├── NotFound
+        └── admin/
+            ├── Admin.css
+            ├── AdminDashboard.js
+            ├── AdminUsers.js
+            ├── AdminDoctors.js
+            ├── AdminContent.js
+            └── AdminAppointments.js
+```
