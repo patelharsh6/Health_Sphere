@@ -253,11 +253,17 @@ const MedicineDetail = () => {
           {medicine.relatedDiseases && medicine.relatedDiseases.length > 0 && (
             <div className="side-panel">
               <h3>Used in Diseases</h3>
-              {medicine.relatedDiseases.map((dSlug) => (
-                <Link to={`/diseases/${dSlug}`} key={dSlug} className="related-link">
-                  <Activity size={16} /> {dSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                </Link>
-              ))}
+              {medicine.relatedDiseases.map((dSlug, i) => {
+                const slugStr = typeof dSlug === 'string' ? dSlug : dSlug?.slug || '';
+                const nameStr = typeof dSlug === 'string' 
+                  ? dSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) 
+                  : dSlug?.name || 'Condition';
+                return (
+                  <Link to={`/diseases/${slugStr}`} key={slugStr || i} className="related-link">
+                    <Activity size={16} /> {nameStr}
+                  </Link>
+                );
+              })}
             </div>
           )}
 
@@ -265,11 +271,17 @@ const MedicineDetail = () => {
           {medicine.alternatives && medicine.alternatives.length > 0 && (
             <div className="side-panel">
               <h3>Alternative Medicines</h3>
-              {medicine.alternatives.map((aSlug) => (
-                <Link to={`/medicines/${aSlug}`} key={aSlug} className="related-link">
-                  <Pill size={16} /> {aSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                </Link>
-              ))}
+              {medicine.alternatives.map((aSlug, i) => {
+                const slugStr = typeof aSlug === 'string' ? aSlug : aSlug?.slug || '';
+                const nameStr = typeof aSlug === 'string' 
+                  ? aSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) 
+                  : aSlug?.name || 'Medicine';
+                return (
+                  <Link to={`/medicines/${slugStr}`} key={slugStr || i} className="related-link">
+                    <Pill size={16} /> {nameStr}
+                  </Link>
+                );
+              })}
             </div>
           )}
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Activity, Calendar, Users, 
-  CheckCircle, Clock, Loader
+  CheckCircle, Clock, Loader,
+  Bell, MapPin, FileText
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, Search, Calendar,
   Mail, Phone, Activity, FileText, Loader,
-  ArrowLeft
+  ArrowLeft, X, Heart
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +17,7 @@ const DoctorPatients = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [loading, setLoading] = useState(true);
+  const [selectedPatient, setSelectedPatient] = useState(null);
 
   // Debounce search
   useEffect(() => {
@@ -191,10 +192,10 @@ const DoctorPatients = () => {
                     </div>
 
                     <div className="dp-patient-actions">
-                      <button className="dp-action-btn primary">
+                      <button className="dp-action-btn primary" onClick={() => setSelectedPatient(patient)}>
                         <FileText size={14} /> View Records
                       </button>
-                      <button className="dp-action-btn secondary">
+                      <button className="dp-action-btn secondary" onClick={() => navigate('/doc-schedule')}>
                         <Calendar size={14} /> Schedule
                       </button>
                     </div>
@@ -205,6 +206,69 @@ const DoctorPatients = () => {
           )}
         </div>
       </section>
+
+      {/* Patient Records Modal */}
+      {selectedPatient && (
+        <div className="dp-modal-overlay" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={() => setSelectedPatient(null)}>
+          <div className="dp-modal-content" style={{ backgroundColor: '#fff', borderRadius: '16px', maxWidth: '520px', width: '100%', padding: '2rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ width: '44px', height: '44px', borderRadius: '50%', backgroundColor: '#ccfbf1', color: '#0f766e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                  {getInitials(selectedPatient.fullName)}
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a' }}>{selectedPatient.fullName}</h3>
+                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{selectedPatient.age} yrs · {selectedPatient.gender}</span>
+                </div>
+              </div>
+              <button onClick={() => setSelectedPatient(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+              <div style={{ padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+                <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase' }}>Condition</span>
+                <p style={{ margin: '4px 0 0', fontWeight: '600', color: '#0f172a' }}>{selectedPatient.condition || 'General'}</p>
+              </div>
+              <div style={{ padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+                <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase' }}>Status</span>
+                <p style={{ margin: '4px 0 0', fontWeight: '600', color: getStatusColor(selectedPatient.status).color }}>{selectedPatient.status}</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.9rem', color: '#334155', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Mail size={16} color="#64748b" />
+                <span>{selectedPatient.email || 'No email on record'}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Phone size={16} color="#64748b" />
+                <span>{selectedPatient.phone || 'No phone on record'}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Calendar size={16} color="#64748b" />
+                <span>Last Consultation: {selectedPatient.lastVisit ? new Date(selectedPatient.lastVisit).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No visits recorded yet'}</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button 
+                onClick={() => { setSelectedPatient(null); navigate('/doc-schedule'); }}
+                style={{ flex: 1, padding: '0.75rem', backgroundColor: '#0d9488', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}
+              >
+                Schedule Appointment
+              </button>
+              <button 
+                onClick={() => setSelectedPatient(null)}
+                style={{ padding: '0.75rem 1.25rem', backgroundColor: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

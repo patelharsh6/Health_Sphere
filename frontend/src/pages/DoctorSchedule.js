@@ -221,7 +221,7 @@ const DoctorSchedule = () => {
             <div className="ds-appointments-panel">
               <div className="ds-panel-header">
                 <h2>Upcoming</h2>
-                <Link to="/my-appointments" className="ds-view-all">View All</Link>
+                <Link to="/patients" className="ds-view-all">View All</Link>
               </div>
 
               <div className="ds-appt-list">

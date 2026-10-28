@@ -264,7 +264,7 @@ const UserProfile = () => {
       {/* 1. HEADER SECTION */}
       <header className="profile-header">
         <div className="header-container">
-          <Link to="/dashboard" className="back-link">
+          <Link to={user?.role === 'doctor' ? '/doc-dashboard' : user?.role === 'admin' ? '/admin/dashboard' : '/dashboard'} className="back-link">
             <ChevronLeft size={20} /> Back to Dashboard
           </Link>
           <div className="header-titles flex-between">

@@ -101,7 +101,7 @@ const DiseaseDetail = () => {
       <header className="disease-hero">
         <div className="hero-container">
           <div className="breadcrumbs">
-            <Link to="/">Home</Link> / <Link to="/symptoms">Health</Link> / <span>{disease.name}</span>
+            <Link to="/">Home</Link> / <Link to="/diseases">Diseases</Link> / <span>{disease.name}</span>
           </div>
           <div className="disease-badges">
             <span className="badge category">{disease.category}</span>
@@ -217,11 +217,14 @@ const DiseaseDetail = () => {
           {disease.relatedMedicines && disease.relatedMedicines.length > 0 && (
             <div className="related-panel">
               <h3>Common Medicines</h3>
-              {disease.relatedMedicines.map((med, idx) => (
-                <span key={idx} className="related-link" style={{ display: 'block', padding: '8px 0' }}>
-                  <Pill size={16} /> {med}
-                </span>
-              ))}
+              {disease.relatedMedicines.map((med, idx) => {
+                const medName = typeof med === 'string' ? med : med?.name || '';
+                return (
+                  <Link to="/medicines" key={idx} className="related-link" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', textDecoration: 'none' }}>
+                    <Pill size={16} /> {medName}
+                  </Link>
+                );
+              })}
             </div>
           )}
 
