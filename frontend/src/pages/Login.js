@@ -36,7 +36,7 @@ const Login = () => {
         } else if (result.user.role === 'doctor') {
           navigate('/doc-dashboard');
         } else {
-          navigate('/admin');
+          navigate('/admin/dashboard');
         }
       } else {
         setError(result.message || 'Login failed. Please try again.');

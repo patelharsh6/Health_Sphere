@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Users, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { Users, CheckCircle, XCircle, Trash2, Loader } from 'lucide-react';
 import { adminAPI, assetUrl } from '../../services/api';
 import './Admin.css';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import AdminNav from './AdminNav';
 
 const AdminUsers = () => {
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,8 +26,17 @@ const AdminUsers = () => {
   };
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    if (user?.role !== 'admin') {
+      navigate('/dashboard');
+      return;
+    }
     fetchUsers();
-  }, []);
+  }, [isAuthenticated, authLoading, user, navigate]);
 
   const handleToggleStatus = async (id, currentStatus) => {
     if (!window.confirm(`Are you sure you want to ${currentStatus ? 'deactivate' : 'activate'} this user?`)) return;
@@ -44,10 +58,18 @@ const AdminUsers = () => {
     }
   };
 
-  if (loading) return <div className="admin-page loading">Loading users...</div>;
+  if (loading) {
+    return (
+      <div className="admin-page" style={{ textAlign: 'center', padding: '60px' }}>
+        <Loader size={36} style={{ animation: 'spin 1s linear infinite', color: '#0d9488' }} />
+        <p style={{ marginTop: '16px', color: '#64748b' }}>Loading users...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-page">
+      <AdminNav />
       <div className="admin-header">
         <h1><Users className="text-primary mr-2" /> User Management</h1>
         <p>View, suspend, or delete platform users.</p>

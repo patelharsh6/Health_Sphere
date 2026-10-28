@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Trash2, PlusCircle } from 'lucide-react';
+import { FileText, Trash2, PlusCircle, Loader } from 'lucide-react';
 import { adminAPI } from '../../services/api';
 import './Admin.css';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import AdminNav from './AdminNav';
 
 const AdminContent = () => {
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('diseases');
   const [diseases, setDiseases] = useState([]);
   const [medicines, setMedicines] = useState([]);
@@ -27,9 +32,18 @@ const AdminContent = () => {
   };
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    if (user?.role !== 'admin') {
+      navigate('/dashboard');
+      return;
+    }
     fetchContent();
     // eslint-disable-next-line
-  }, [activeTab]);
+  }, [activeTab, isAuthenticated, authLoading, user, navigate]);
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this item? This action cannot be undone.')) return;
@@ -73,6 +87,7 @@ const AdminContent = () => {
 
   return (
     <div className="admin-page">
+      <AdminNav />
       <div className="admin-header">
         <h1><FileText className="text-primary mr-2" /> Content Management</h1>
         <p>Manage diseases and medicines catalog.</p>

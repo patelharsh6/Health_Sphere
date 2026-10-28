@@ -100,7 +100,14 @@ const Signup = () => {
 
         const result = await register(payload);
         if (result.success) {
-          navigate('/dashboard');
+          const registeredRole = result.data?.user?.role || role;
+          if (registeredRole === 'doctor') {
+            navigate('/doc-dashboard');
+          } else if (registeredRole === 'admin') {
+            navigate('/admin/dashboard');
+          } else {
+            navigate('/dashboard');
+          }
         } else {
           setServerError(result.message || 'Registration failed.');
         }

@@ -22,6 +22,7 @@ const DoctorSchedule = () => {
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -78,10 +79,14 @@ const DoctorSchedule = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
+    setSaveMessage('');
     try {
       await doctorAPI.saveSchedule(schedule);
+      setSaveMessage('Schedule saved successfully! Available slots updated.');
+      setTimeout(() => setSaveMessage(''), 4000);
     } catch (error) {
       console.error('Failed to save schedule:', error);
+      alert('Failed to save schedule. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -147,6 +152,12 @@ const DoctorSchedule = () => {
                   )}
                 </button>
               </div>
+
+              {saveMessage && (
+                <div style={{ background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Check size={16} /> {saveMessage}
+                </div>
+              )}
 
               {/* Day Tabs */}
               <div className="ds-day-tabs">

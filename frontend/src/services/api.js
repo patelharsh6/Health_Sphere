@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+const API_BASE_URL = isLocalhost
+  ? 'http://localhost:5000/api'
+  : (process.env.REACT_APP_API_URL || 'https://health-sphere-backend.vercel.app/api');
 
 // Static files (avatars) are served from the server root, not under /api.
 export const ASSET_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '');

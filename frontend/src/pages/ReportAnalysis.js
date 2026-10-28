@@ -18,15 +18,30 @@ const ReportAnalysis = () => {
 
   const fetchReport = async () => {
     try {
-      const res = await reportAPI.getById(id);
+      setLoading(true);
+      setError(null);
+      let targetId = id;
+
+      if (!targetId) {
+        const myReports = await reportAPI.getMyReports({ limit: 1 });
+        if (myReports.data?.data && myReports.data.data.length > 0) {
+          targetId = myReports.data.data[0]._id;
+        } else {
+          setError('No reports uploaded yet. Upload your first medical report to view AI insights.');
+          setLoading(false);
+          return;
+        }
+      }
+
+      const res = await reportAPI.getById(targetId);
       if (res.data.success) {
         setReport(res.data.data);
       } else {
-        setError(res.data.message);
+        setError(res.data.message || 'Report not found.');
       }
     } catch (err) {
       console.error(err);
-      setError('Failed to load report.');
+      setError('Failed to load report. Please verify your connection.');
     } finally {
       setLoading(false);
     }
@@ -75,9 +90,12 @@ const ReportAnalysis = () => {
   if (error || !report) {
     return (
       <div className="analysis-page error">
-        <h2>Oops!</h2>
-        <p>{error || 'Report not found'}</p>
-        <Link to="/dashboard" className="action-btn btn-primary mt-4">Back to Dashboard</Link>
+        <h2>Report Insights</h2>
+        <p style={{ maxWidth: '480px', margin: '0.75rem auto 1.5rem', color: '#64748b' }}>{error || 'Report not found'}</p>
+        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+          <Link to="/upload" className="action-btn btn-primary" style={{ background: '#0d9488' }}>Upload a Report</Link>
+          <Link to="/dashboard" className="action-btn btn-secondary">Back to Dashboard</Link>
+        </div>
       </div>
     );
   }

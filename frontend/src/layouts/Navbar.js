@@ -3,7 +3,7 @@ import {
   Menu, X, Search, User, ChevronDown, Activity, 
   Pill, Stethoscope, FileText, Calendar, Upload, 
   Bot, Bell, LayoutDashboard, LogOut,
-  Heart, BookOpen
+  Heart, BookOpen, ShieldCheck
 } from 'lucide-react';
 import './Navbar.css';
 import { Link, useNavigate } from 'react-router-dom';
@@ -14,6 +14,7 @@ const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [navSearch, setNavSearch] = useState('');
 
   const userRole = user?.role || 'patient';
 
@@ -90,7 +91,15 @@ const Navbar = () => {
             <input 
               type="text" 
               className="search-input" 
-              placeholder="Search doctors, symptoms..." 
+              placeholder="Search doctors, conditions..." 
+              value={navSearch}
+              onChange={(e) => setNavSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && navSearch.trim()) {
+                  navigate(`/doctors?search=${encodeURIComponent(navSearch.trim())}`);
+                  setNavSearch('');
+                }
+              }}
             />
           </div>
 
@@ -114,6 +123,11 @@ const Navbar = () => {
                     <Heart size={16} /> Find Doctors
                   </Link>
                 )}
+                {userRole === 'admin' && (
+                  <Link to="/admin/dashboard" className="dropdown-link" style={{ color: '#0d9488', fontWeight: 600 }}>
+                    <ShieldCheck size={16} /> Admin Panel
+                  </Link>
+                )}
               </div>
             </div>
             
@@ -123,22 +137,80 @@ const Navbar = () => {
               </Link>
             </div>
 
+            {userRole === 'admin' && (
+              <Link to="/admin/dashboard" className="nav-item" style={{ textDecoration: 'none', color: '#0d9488', fontWeight: 600 }}>
+                Admin Portal
+              </Link>
+            )}
+
             {isAuthenticated ? (
               <div className="profile-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <button className="icon-btn"><Bell size={20} /></button>
+                <Link to={userRole === 'doctor' ? "/schedule" : "/my-appointments"} className="icon-btn" title="Appointments">
+                  <Calendar size={18} />
+                </Link>
                 
                 <div className="nav-item dropdown-trigger" style={{ padding: 0 }}>
                   <button className="avatar-btn" title={user?.fullName} style={{ pointerEvents: 'none' }}>
                     {getInitials()}
                   </button>
-                  <div className="dropdown-menu profile-dropdown" style={{ minWidth: '190px' }}>
-                    <Link to={userRole === 'doctor' ? "/doc-dashboard" : "/dashboard"} className="dropdown-link">
-                      <LayoutDashboard size={16} /> Dashboard
-                    </Link>
+                  <div className="dropdown-menu profile-dropdown" style={{ minWidth: '200px' }}>
+                    <div style={{ padding: '8px 14px', borderBottom: '1px solid #f1f5f9', fontSize: '0.85rem' }}>
+                      <strong style={{ display: 'block', color: '#1e293b' }}>{user?.fullName}</strong>
+                      <span style={{ color: '#64748b', textTransform: 'capitalize' }}>{userRole} account</span>
+                    </div>
+
+                    {userRole === 'patient' && (
+                      <>
+                        <Link to="/dashboard" className="dropdown-link">
+                          <LayoutDashboard size={16} /> Dashboard
+                        </Link>
+                        <Link to="/my-appointments" className="dropdown-link">
+                          <Calendar size={16} /> My Appointments
+                        </Link>
+                        <Link to="/upload" className="dropdown-link">
+                          <Upload size={16} /> Lab Reports
+                        </Link>
+                      </>
+                    )}
+
+                    {userRole === 'doctor' && (
+                      <>
+                        <Link to="/doc-dashboard" className="dropdown-link">
+                          <LayoutDashboard size={16} /> Doctor Dashboard
+                        </Link>
+                        <Link to="/schedule" className="dropdown-link">
+                          <Calendar size={16} /> My Schedule
+                        </Link>
+                        <Link to="/patients" className="dropdown-link">
+                          <User size={16} /> My Patients
+                        </Link>
+                      </>
+                    )}
+
+                    {userRole === 'admin' && (
+                      <>
+                        <Link to="/admin/dashboard" className="dropdown-link">
+                          <LayoutDashboard size={16} /> Admin Dashboard
+                        </Link>
+                        <Link to="/admin/users" className="dropdown-link">
+                          <User size={16} /> Manage Users
+                        </Link>
+                        <Link to="/admin/doctors" className="dropdown-link">
+                          <Stethoscope size={16} /> Verify Doctors
+                        </Link>
+                        <Link to="/admin/appointments" className="dropdown-link">
+                          <Calendar size={16} /> All Appointments
+                        </Link>
+                        <Link to="/admin/content" className="dropdown-link">
+                          <FileText size={16} /> Content Catalog
+                        </Link>
+                      </>
+                    )}
+
                     <Link to="/profile" className="dropdown-link">
-                      <User size={16} /> My Profile
+                      <User size={16} /> Profile & Settings
                     </Link>
-                    <button className="dropdown-link" onClick={handleLogout} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', color: 'inherit' }}>
+                    <button className="dropdown-link" onClick={handleLogout} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', color: '#ef4444' }}>
                       <LogOut size={16} /> Logout
                     </button>
                   </div>

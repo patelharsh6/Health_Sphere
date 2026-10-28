@@ -174,7 +174,7 @@ const DoctorListing = () => {
                         <button className="btn-secondary" onClick={() => setSelectedDoctor(doc)}>
                           View Profile
                         </button>
-                        <Link to="/appointments" className="btn-primary-link">
+                        <Link to={`/appointments?doctorId=${doc._id}&specialization=${encodeURIComponent(doc.specialization)}`} className="btn-primary-link">
                           Book Appointment
                         </Link>
                       </div>
@@ -259,7 +259,7 @@ const DoctorListing = () => {
                 <span>Consultation Fee</span>
                 <strong>₹{selectedDoctor.consultationFee}</strong>
               </div>
-              <Link to="/appointments" className="btn-primary-link large">
+              <Link to={`/appointments?doctorId=${selectedDoctor._id}&specialization=${encodeURIComponent(selectedDoctor.specialization)}`} className="btn-primary-link large">
                 Book Appointment <ChevronRight size={18} />
               </Link>
             </div>

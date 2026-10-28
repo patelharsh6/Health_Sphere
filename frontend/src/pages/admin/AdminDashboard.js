@@ -1,14 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Users, UserPlus, Activity, FileText, CheckCircle, Clock, XCircle, LayoutDashboard } from 'lucide-react';
+import { Users, UserPlus, Activity, FileText, CheckCircle, Clock, XCircle, LayoutDashboard, Loader } from 'lucide-react';
 import { adminAPI } from '../../services/api';
 import './Admin.css';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import AdminNav from './AdminNav';
 
 const AdminDashboard = () => {
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    if (user?.role !== 'admin') {
+      navigate('/dashboard');
+      return;
+    }
+
     const fetchStats = async () => {
       try {
         const res = await adminAPI.getStats();
@@ -22,14 +36,20 @@ const AdminDashboard = () => {
       }
     };
     fetchStats();
-  }, []);
+  }, [isAuthenticated, authLoading, user, navigate]);
 
   if (loading) {
-    return <div className="admin-page loading">Loading admin dashboard...</div>;
+    return (
+      <div className="admin-page" style={{ textAlign: 'center', padding: '60px' }}>
+        <Loader size={36} style={{ animation: 'spin 1s linear infinite', color: '#0d9488' }} />
+        <p style={{ marginTop: '16px', color: '#64748b' }}>Loading admin dashboard...</p>
+      </div>
+    );
   }
 
   return (
     <div className="admin-page">
+      <AdminNav />
       <div className="admin-header">
         <h1><LayoutDashboard className="text-primary mr-2" /> Admin Dashboard</h1>
         <p>Platform Overview and Statistics</p>

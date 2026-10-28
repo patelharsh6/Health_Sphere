@@ -17,6 +17,7 @@ const ReportUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadedReportId, setUploadedReportId] = useState(null);
   const [recentUploads, setRecentUploads] = useState([]);
   const [loadingReports, setLoadingReports] = useState(true);
   
@@ -131,6 +132,8 @@ const ReportUpload = () => {
       setUploadProgress(100);
 
       if (res.data.success) {
+        const newId = res.data.data?._id;
+        setUploadedReportId(newId);
         setTimeout(() => {
           setIsUploading(false);
           setUploadSuccess(true);
@@ -139,6 +142,9 @@ const ReportUpload = () => {
           // Reset form
           setFile(null);
           setUploadProgress(0);
+          if (withAI && newId) {
+            navigate(`/analysis/${newId}`);
+          }
         }, 500);
       }
     } catch (error) {
@@ -313,9 +319,16 @@ const ReportUpload = () => {
               <CheckCircle size={60} className="success-icon" />
               <h2>Report Uploaded Successfully!</h2>
               <p>Your medical record has been securely stored.</p>
-              <button className="btn-outline" onClick={() => setUploadSuccess(false)}>
-                Upload Another Report
-              </button>
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1.25rem', flexWrap: 'wrap' }}>
+                {uploadedReportId && (
+                  <Link to={`/analysis/${uploadedReportId}`} className="btn-primary" style={{ textDecoration: 'none', padding: '0.65rem 1.25rem', borderRadius: '8px', background: '#0d9488', color: 'white', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <Bot size={18} /> View AI Analysis →
+                  </Link>
+                )}
+                <button className="btn-outline" onClick={() => setUploadSuccess(false)}>
+                  Upload Another Report
+                </button>
+              </div>
             </div>
           )}
 

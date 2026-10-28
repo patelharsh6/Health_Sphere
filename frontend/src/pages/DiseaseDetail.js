@@ -208,7 +208,7 @@ const DiseaseDetail = () => {
               <h3>When to See a Doctor</h3>
             </div>
             <p>Seek medical attention if symptoms persist or worsen. Consult a {disease.specialistType} for proper diagnosis.</p>
-            <Link to="/appointments" className="book-btn-sidebar" style={{ textDecoration: 'none', display: 'block', textAlign: 'center' }}>
+            <Link to={`/appointments?specialization=${encodeURIComponent(disease.specialistType || '')}`} className="book-btn-sidebar" style={{ textDecoration: 'none', display: 'block', textAlign: 'center' }}>
               Book Appointment
             </Link>
           </div>

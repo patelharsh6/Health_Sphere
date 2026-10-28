@@ -4,7 +4,7 @@ import {
   Star, CheckCircle, User, FileText, ChevronLeft, X, 
   Stethoscope, ShieldCheck, Loader
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { doctorAPI, appointmentAPI } from '../services/api';
 import './BookAppointment.css';
@@ -14,10 +14,15 @@ const SPECIALIZATIONS = ["All", "General Physician", "Cardiologist", "Dermatolog
 const BookAppointment = () => {
   const { user, isAuthenticated, profile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const targetDoctorId = searchParams.get('doctorId');
+  const targetSpec = searchParams.get('specialization');
+
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSpec, setSelectedSpec] = useState("All");
+  const [selectedSpec, setSelectedSpec] = useState(targetSpec && SPECIALIZATIONS.includes(targetSpec) ? targetSpec : "All");
   
   // Booking Modal State
   const [selectedDoctor, setSelectedDoctor] = useState(null);
@@ -47,6 +52,13 @@ const BookAppointment = () => {
       const res = await doctorAPI.getAll(params);
       if (res.data.success) {
         setDoctors(res.data.data);
+        if (targetDoctorId && !selectedDoctor) {
+          const matched = res.data.data.find(d => d._id === targetDoctorId);
+          if (matched) {
+            setSelectedDoctor(matched);
+            setStep(1);
+          }
+        }
       }
     } catch (err) {
       console.error('Failed to fetch doctors:', err);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import './App.css';
 import Navbar from './layouts/Navbar';
 import Footer from './layouts/Footer';
@@ -24,6 +24,7 @@ import DoctorListing from './pages/DoctorListing';
 import AppointmentHistory from './pages/AppointmentHistory';
 import UserProfile from './pages/UserProfile';
 import AIAssistant from './pages/AIAssistant';
+import InfoPage from './pages/InfoPage';
 import NotFound from './pages/NotFound';
 
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -45,6 +46,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/doctor-login" element={<Navigate to="/login" replace />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
@@ -69,7 +71,19 @@ function App() {
         <Route path="/my-appointments" element={<AppointmentHistory />} />
         <Route path="/profile" element={<UserProfile />} />
 
+        {/* Informational & Policy Pages */}
+        <Route path="/about" element={<InfoPage />} />
+        <Route path="/how-it-works" element={<InfoPage />} />
+        <Route path="/faqs" element={<InfoPage />} />
+        <Route path="/contact" element={<InfoPage />} />
+        <Route path="/privacy" element={<InfoPage />} />
+        <Route path="/terms" element={<InfoPage />} />
+        <Route path="/ai-policy" element={<InfoPage />} />
+        <Route path="/medical-policy" element={<InfoPage />} />
+        <Route path="/blog" element={<InfoPage />} />
+
         {/* Admin Routes */}
+        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/doctors" element={<AdminDoctors />} />

@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, CheckCircle, ShieldAlert } from 'lucide-react';
+import { UserPlus, CheckCircle, ShieldAlert, Loader } from 'lucide-react';
 import { adminAPI } from '../../services/api';
 import './Admin.css';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import AdminNav from './AdminNav';
 
 const AdminDoctors = () => {
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,8 +26,17 @@ const AdminDoctors = () => {
   };
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    if (user?.role !== 'admin') {
+      navigate('/dashboard');
+      return;
+    }
     fetchPendingDoctors();
-  }, []);
+  }, [isAuthenticated, authLoading, user, navigate]);
 
   const handleVerify = async (id) => {
     if (!window.confirm('Verify this doctor\'s medical license? They will be immediately available for appointments.')) return;
@@ -34,10 +48,18 @@ const AdminDoctors = () => {
     }
   };
 
-  if (loading) return <div className="admin-page loading">Loading pending verifications...</div>;
+  if (loading) {
+    return (
+      <div className="admin-page" style={{ textAlign: 'center', padding: '60px' }}>
+        <Loader size={36} style={{ animation: 'spin 1s linear infinite', color: '#0d9488' }} />
+        <p style={{ marginTop: '16px', color: '#64748b' }}>Loading pending verifications...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-page">
+      <AdminNav />
       <div className="admin-header">
         <h1><UserPlus className="text-primary mr-2" /> Pending Doctor Verifications</h1>
         <p>Review medical licenses and approve doctor profiles.</p>

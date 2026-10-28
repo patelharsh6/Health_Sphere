@@ -110,7 +110,7 @@ const PatientDashboard = () => {
           <Link to="/appointments" className="nav-item"><Calendar size={20} /> Appointments</Link>
           <Link to="/upload" className="nav-item"><FileText size={20} /> Lab Reports</Link>
           <Link to="/symptoms" className="nav-item"><Search size={20} /> Symptom Checker</Link>
-          <Link to="/symptoms" className="nav-item ai-nav"><Bot size={20} /> AI Assistant</Link>
+          <Link to="/ai-assistant" className="nav-item ai-nav"><Bot size={20} /> AI Assistant</Link>
         </nav>
       </aside>
 
