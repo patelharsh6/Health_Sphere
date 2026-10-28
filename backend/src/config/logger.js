@@ -3,12 +3,8 @@ const fs = require('fs');
 const winston = require('winston');
 const { NODE_ENV } = require('./env');
 
+const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
 const LOG_DIR = path.resolve(__dirname, '../../logs');
-
-// Winston's File transport does not create the directory itself.
-if (!fs.existsSync(LOG_DIR)) {
-  fs.mkdirSync(LOG_DIR, { recursive: true });
-}
 
 // Console output is for a human reading a terminal: one coloured line, with the
 // request id when there is one, and the stack appended for errors.
@@ -28,25 +24,40 @@ const fileFormat = winston.format.combine(
   winston.format.json()
 );
 
+const transports = [
+  new winston.transports.Console({ format: consoleFormat }),
+];
+
+// Only enable file transports when NOT in a serverless environment (where filesystem is read-only)
+if (!isServerless) {
+  try {
+    if (!fs.existsSync(LOG_DIR)) {
+      fs.mkdirSync(LOG_DIR, { recursive: true });
+    }
+    transports.push(
+      new winston.transports.File({
+        filename: path.join(LOG_DIR, 'error.log'),
+        level: 'error',
+        maxsize: 5 * 1024 * 1024,
+        maxFiles: 5,
+      }),
+      new winston.transports.File({
+        filename: path.join(LOG_DIR, 'combined.log'),
+        maxsize: 5 * 1024 * 1024,
+        maxFiles: 5,
+      })
+    );
+  } catch (err) {
+    // Filesystem may be read-only; fallback to console only
+  }
+}
+
 const logger = winston.createLogger({
   // Tests stay quiet unless something actually fails.
   level: NODE_ENV === 'production' ? 'info' : 'debug',
   silent: NODE_ENV === 'test',
-  format: fileFormat,
-  transports: [
-    new winston.transports.File({
-      filename: path.join(LOG_DIR, 'error.log'),
-      level: 'error',
-      maxsize: 5 * 1024 * 1024,
-      maxFiles: 5,
-    }),
-    new winston.transports.File({
-      filename: path.join(LOG_DIR, 'combined.log'),
-      maxsize: 5 * 1024 * 1024,
-      maxFiles: 5,
-    }),
-    new winston.transports.Console({ format: consoleFormat }),
-  ],
+  format: isServerless ? consoleFormat : fileFormat,
+  transports,
   exitOnError: false,
 });
 

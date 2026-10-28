@@ -8,7 +8,18 @@ const fs = require('fs');
 const { STORAGE_DRIVER } = require('../config/env');
 const asyncHandler = require('../utils/asyncHandler');
 
-const UPLOADS_DIR = path.resolve(__dirname, '../../uploads');
+const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+const UPLOADS_DIR = isServerless
+  ? path.join('/tmp', 'uploads')
+  : path.resolve(__dirname, '../../uploads');
+
+try {
+  if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  }
+} catch (e) {
+  // Safe ignore in serverless environments
+}
 
 // Multer config for file uploads
 const storage = STORAGE_DRIVER === 'cloudinary'

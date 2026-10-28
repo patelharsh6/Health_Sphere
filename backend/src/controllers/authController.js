@@ -9,8 +9,18 @@ const { generateToken } = require('../utils/jwt');
 const { NODE_ENV, CLIENT_URL } = require('../config/env');
 const asyncHandler = require('../utils/asyncHandler');
 
-const AVATARS_DIR = path.resolve(__dirname, '../../uploads/avatars');
-fs.mkdirSync(AVATARS_DIR, { recursive: true });
+const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+const AVATARS_DIR = isServerless
+  ? path.join('/tmp', 'uploads', 'avatars')
+  : path.resolve(__dirname, '../../uploads/avatars');
+
+try {
+  if (!fs.existsSync(AVATARS_DIR)) {
+    fs.mkdirSync(AVATARS_DIR, { recursive: true });
+  }
+} catch (e) {
+  // Safe ignore in serverless environments
+}
 
 // ──────────────────────────────────────────────
 // AVATAR UPLOAD (multer)

@@ -189,6 +189,7 @@ describe('PUT /api/auth/password', () => {
 
   it('rotates the token on success', async () => {
     const { token } = await createPatient();
+    await new Promise((resolve) => setTimeout(resolve, 1050));
     const res = await api()
       .put('/api/auth/password')
       .set(...auth(token))

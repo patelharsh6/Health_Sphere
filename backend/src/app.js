@@ -112,8 +112,42 @@ app.use(
 );
 
 // ──────────────────────────────────────────────
+// ──────────────────────────────────────────────
+// HEALTH CHECK (Accessible before DB check)
+// ──────────────────────────────────────────────
+
+const mongoose = require('mongoose');
+
+app.get(['/', '/health', '/api/health'], (req, res) => {
+  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  res.status(200).json({
+    success: true,
+    message: 'HealthSphere API is running 🚀',
+    database: dbStatus,
+    environment: NODE_ENV,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// ──────────────────────────────────────────────
 // API ROUTES
 // ──────────────────────────────────────────────
+
+// Ensure database connection for all API routes (essential for serverless/Vercel)
+const connectDB = require('./config/db');
+app.use('/api', async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('Database connection error in request handler:', err.message);
+    res.status(500).json({
+      success: false,
+      message: 'Database connection failed. Please verify server environment variables (MONGO_URI) and Atlas IP whitelist.',
+      error: NODE_ENV === 'development' ? err.message : undefined,
+    });
+  }
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes);
@@ -139,19 +173,6 @@ app.use(
 
 // Raw spec, for generating clients or importing into Postman.
 app.get('/api/docs.json', (req, res) => res.json(swaggerSpec));
-
-// ──────────────────────────────────────────────
-// HEALTH CHECK
-// ──────────────────────────────────────────────
-
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'HealthSphere API is running 🚀',
-    environment: NODE_ENV,
-    timestamp: new Date().toISOString(),
-  });
-});
 
 // ──────────────────────────────────────────────
 // 404 & ERROR HANDLER — must stay last
